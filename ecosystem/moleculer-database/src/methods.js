@@ -7,9 +7,9 @@
 "use strict";
 
 const Adapters = require("./adapters");
-const { Context } = require("moleculer"); // eslint-disable-line no-unused-vars
+const { Context } = require("moleculer-rs-client/src/compat"); // eslint-disable-line no-unused-vars
 const { EntityNotFoundError } = require("./errors");
-const { MoleculerClientError } = require("moleculer").Errors;
+const { Errors: { MoleculerClientError } } = require("moleculer-rs-client/src/compat");
 const { Transform } = require("stream");
 const _ = require("lodash");
 const C = require("./constants");

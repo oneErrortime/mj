@@ -6,7 +6,7 @@
 
 "use strict";
 
-const { MoleculerClientError } = require("moleculer").Errors;
+const { Errors: { MoleculerClientError } } = require("moleculer-rs-client/src/compat");
 
 class EntityNotFoundError extends MoleculerClientError {
 	constructor(id) {

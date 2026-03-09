@@ -7,7 +7,7 @@
 
 "use strict";
 
-const { METRIC } = require("moleculer");
+const { METRIC } = require("moleculer-rs-client/src/compat");
 const C = require("./constants");
 
 module.exports = function (mixinOpts) {

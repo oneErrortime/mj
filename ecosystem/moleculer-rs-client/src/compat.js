@@ -40,7 +40,24 @@ class ServiceSchemaError extends MoleculerError {
   }
 }
 
-const Errors = { MoleculerError, MoleculerRetryableError, BrokerOptionsError, ServiceSchemaError };
+class MoleculerClientError extends MoleculerError {
+  constructor(message, code, type, data) {
+    super(message, code || 422, type || "MOLECULER_CLIENT_ERROR", data);
+    this.name = "MoleculerClientError";
+  }
+}
+
+class ValidationError extends MoleculerClientError {
+  constructor(message, type, data) {
+    super(message, 422, type || "VALIDATION_ERROR", data);
+    this.name = "ValidationError";
+  }
+}
+
+const Errors = {
+  MoleculerError, MoleculerRetryableError, MoleculerClientError,
+  BrokerOptionsError, ServiceSchemaError, ValidationError,
+};
 
 // ─── Serializer ────────────────────────────────────────────────────────────────
 
