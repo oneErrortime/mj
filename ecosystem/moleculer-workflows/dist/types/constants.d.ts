@@ -1,0 +1,27 @@
+export declare const SIGNAL_EMPTY_KEY = "null";
+export declare const JOB_FIELDS_JSON: string[];
+export declare const JOB_FIELDS_NUMERIC: string[];
+export declare const JOB_FIELDS_BOOLEAN: string[];
+export declare const RERUN_REMOVABLE_FIELDS: string[];
+export declare const QUEUE_CATEGORY_WF = "workflows";
+export declare const QUEUE_CATEGORY_SIGNAL = "signals";
+export declare const QUEUE_JOB = "job";
+export declare const QUEUE_JOB_LOCK = "job-lock";
+export declare const QUEUE_JOB_EVENTS = "job-events";
+export declare const QUEUE_MAINTENANCE_LOCK = "maintenance-lock";
+export declare const QUEUE_MAINTENANCE_LOCK_DELAYED = "maintenance-lock-delayed";
+export declare const QUEUE_WAITING = "waiting";
+export declare const QUEUE_ACTIVE = "active";
+export declare const QUEUE_STALLED = "stalled";
+export declare const QUEUE_DELAYED = "delayed";
+export declare const QUEUE_COMPLETED = "completed";
+export declare const QUEUE_FAILED = "failed";
+export declare const FINISHED = "finished";
+export declare const METRIC_WORKFLOWS_JOBS_CREATED = "moleculer.workflows.jobs.created";
+export declare const METRIC_WORKFLOWS_JOBS_TOTAL = "moleculer.workflows.jobs.total";
+export declare const METRIC_WORKFLOWS_JOBS_ACTIVE = "moleculer.workflows.jobs.active";
+export declare const METRIC_WORKFLOWS_JOBS_TIME = "moleculer.workflows.jobs.time";
+export declare const METRIC_WORKFLOWS_JOBS_ERRORS_TOTAL = "moleculer.workflows.jobs.errors.total";
+export declare const METRIC_WORKFLOWS_JOBS_RETRIES_TOTAL = "moleculer.workflows.jobs.retries.total";
+export declare const METRIC_WORKFLOWS_SIGNALS_TOTAL = "moleculer.workflows.signals.total";
+//# sourceMappingURL=constants.d.ts.map
