@@ -1,8 +1,9 @@
-//! Distributed tracing — spans and exporters.
+//! Distributed tracing — spans, parent/child relationships, SpanStore.
 
 use chrono::{DateTime, Utc};
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -17,9 +18,17 @@ pub struct Span {
     pub start_time: DateTime<Utc>,
     pub end_time: Option<DateTime<Utc>>,
     pub duration_ms: Option<f64>,
-    pub tags: Vec<(String, String)>,
+    pub tags: HashMap<String, String>,
+    pub logs: Vec<SpanLog>,
     pub error: Option<String>,
+    pub sampled: bool,
     pub finished: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SpanLog {
+    pub timestamp: DateTime<Utc>,
+    pub message: String,
 }
 
 impl Span {
@@ -29,14 +38,13 @@ impl Span {
             trace_id: trace_id.into(),
             parent_id: None,
             name: name.into(),
-            service: None,
-            action: None,
-            node_id: None,
+            service: None, action: None, node_id: None,
             start_time: Utc::now(),
-            end_time: None,
-            duration_ms: None,
-            tags: Vec::new(),
+            end_time: None, duration_ms: None,
+            tags: HashMap::new(),
+            logs: Vec::new(),
             error: None,
+            sampled: true,
             finished: false,
         }
     }
@@ -44,29 +52,41 @@ impl Span {
     pub fn finish(&mut self) {
         let now = Utc::now();
         self.end_time = Some(now);
-        self.duration_ms = Some((now - self.start_time).num_microseconds().unwrap_or(0) as f64 / 1000.0);
+        self.duration_ms = Some(
+            (now - self.start_time).num_microseconds().unwrap_or(0) as f64 / 1000.0,
+        );
         self.finished = true;
     }
 
     pub fn tag(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
-        self.tags.push((key.into(), value.into()));
-        self
+        self.tags.insert(key.into(), value.into()); self
     }
 
-    pub fn set_error(&mut self, err: impl Into<String>) {
-        self.error = Some(err.into());
+    pub fn set_error(&mut self, err: impl Into<String>) { self.error = Some(err.into()); }
+
+    pub fn log(&mut self, msg: impl Into<String>) {
+        self.logs.push(SpanLog { timestamp: Utc::now(), message: msg.into() });
     }
 }
 
-/// In-memory span store (Laboratory exporter reads from here).
+/// In-memory span store — Laboratory reads from here.
 pub struct SpanStore {
-    pub spans: DashMap<String, Span>,
+    spans: DashMap<String, Span>,
+    max_size: usize,
 }
 
 impl SpanStore {
-    pub fn new() -> Self { Self { spans: DashMap::new() } }
+    pub fn new() -> Self { Self { spans: DashMap::new(), max_size: 2000 } }
 
     pub fn record(&self, span: Span) {
+        if self.spans.len() >= self.max_size {
+            // Evict oldest finished span
+            let oldest = self.spans.iter()
+                .filter(|e| e.finished)
+                .min_by_key(|e| e.start_time)
+                .map(|e| e.key().clone());
+            if let Some(k) = oldest { self.spans.remove(&k); }
+        }
         self.spans.insert(span.id.clone(), span);
     }
 
@@ -80,8 +100,13 @@ impl SpanStore {
         all.truncate(limit);
         all
     }
+
+    pub fn by_trace(&self, trace_id: &str) -> Vec<Span> {
+        self.spans.iter()
+            .filter(|e| e.trace_id == trace_id)
+            .map(|e| e.value().clone())
+            .collect()
+    }
 }
 
-impl Default for SpanStore {
-    fn default() -> Self { Self::new() }
-}
+impl Default for SpanStore { fn default() -> Self { Self::new() } }

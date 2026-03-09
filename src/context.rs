@@ -1,4 +1,4 @@
-//! Context — created for each action call or event, carries params and metadata.
+//! Context — created for each action call / event dispatch.
 
 use crate::error::Result;
 use serde::{Deserialize, Serialize};
@@ -7,123 +7,128 @@ use std::collections::HashMap;
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 
-/// Context represents a single action call or event dispatch.
-/// Every handler receives a Context containing params, metadata,
-/// caller info, and convenience methods for sub-calls.
 #[derive(Debug, Clone)]
 pub struct Context {
-    /// Unique context ID.
     pub id: String,
-    /// Name of the called action or event.
+    pub request_id: String,
     pub action: Option<String>,
-    /// Name of the event (if this context is for an event).
     pub event: Option<String>,
-    /// Node ID of the originator.
     pub node_id: Option<String>,
-    /// Call depth (starts at 0).
+    /// Caller service full name.
+    pub caller: Option<String>,
+    /// Call level (root = 1, incremented on every sub-call).
     pub level: u32,
-    /// Action parameters / event payload.
     pub params: Value,
-    /// Arbitrary metadata passed between services.
     pub meta: HashMap<String, Value>,
-    /// When this context was created.
+    /// Custom headers (channels support).
+    pub headers: HashMap<String, String>,
     pub created_at: DateTime<Utc>,
-    /// Request timeout in ms (0 = use broker default).
+    /// Timeout override in ms (0 = broker default).
     pub timeout: u64,
-    /// How many retries remain.
+    /// Remaining retries.
     pub retries_left: u32,
-    /// Tracing span ID (if tracing is enabled).
+    /// Number of retry attempts so far.
+    pub retry_attempts: u32,
+    // --- tracing ---
     pub span_id: Option<String>,
-    /// Parent span ID.
     pub parent_span_id: Option<String>,
-    /// Whether this is a streaming context.
-    pub is_streaming: bool,
+    pub trace_id: Option<String>,
+    pub sampled: bool,
+    // --- channel context ---
+    pub channel_name: Option<String>,
+    pub channel_group: Option<String>,
 }
 
 impl Context {
-    /// Create a new root context.
     pub fn new(action: impl Into<String>, params: Value) -> Self {
+        let id = Uuid::new_v4().to_string();
         Self {
-            id: Uuid::new_v4().to_string(),
+            request_id: id.clone(),
+            id,
             action: Some(action.into()),
             event: None,
             node_id: None,
-            level: 0,
+            caller: None,
+            level: 1,
             params,
             meta: HashMap::new(),
+            headers: HashMap::new(),
             created_at: Utc::now(),
             timeout: 0,
             retries_left: 0,
+            retry_attempts: 0,
             span_id: Some(Uuid::new_v4().to_string()),
             parent_span_id: None,
-            is_streaming: false,
+            trace_id: Some(Uuid::new_v4().to_string()),
+            sampled: true,
+            channel_name: None,
+            channel_group: None,
         }
     }
 
-    /// Create a child context for sub-calls.
+    /// Create a child context for sub-calls — level++ and inherits meta / trace.
     pub fn child(&self, action: impl Into<String>, params: Value) -> Self {
         Self {
             id: Uuid::new_v4().to_string(),
+            request_id: self.request_id.clone(),
             action: Some(action.into()),
             event: None,
             node_id: self.node_id.clone(),
+            caller: self.caller.clone(),
             level: self.level + 1,
             params,
             meta: self.meta.clone(),
+            headers: self.headers.clone(),
             created_at: Utc::now(),
             timeout: self.timeout,
             retries_left: self.retries_left,
+            retry_attempts: 0,
             span_id: Some(Uuid::new_v4().to_string()),
             parent_span_id: self.span_id.clone(),
-            is_streaming: false,
+            trace_id: self.trace_id.clone(),
+            sampled: self.sampled,
+            channel_name: None,
+            channel_group: None,
         }
     }
 
-    /// Create an event context.
     pub fn for_event(event: impl Into<String>, payload: Value) -> Self {
+        let id = Uuid::new_v4().to_string();
         Self {
-            id: Uuid::new_v4().to_string(),
+            id: id.clone(), request_id: id,
             action: None,
             event: Some(event.into()),
-            node_id: None,
-            level: 0,
+            node_id: None, caller: None, level: 1,
             params: payload,
-            meta: HashMap::new(),
-            created_at: Utc::now(),
-            timeout: 0,
-            retries_left: 0,
+            meta: HashMap::new(), headers: HashMap::new(),
+            created_at: Utc::now(), timeout: 0,
+            retries_left: 0, retry_attempts: 0,
             span_id: Some(Uuid::new_v4().to_string()),
             parent_span_id: None,
-            is_streaming: false,
+            trace_id: Some(Uuid::new_v4().to_string()),
+            sampled: true,
+            channel_name: None, channel_group: None,
         }
     }
 
-    /// Set a metadata value.
     pub fn set_meta(&mut self, key: impl Into<String>, value: Value) -> &mut Self {
-        self.meta.insert(key.into(), value);
-        self
+        self.meta.insert(key.into(), value); self
     }
+    pub fn get_meta(&self, key: &str) -> Option<&Value> { self.meta.get(key) }
+    pub fn set_header(&mut self, key: impl Into<String>, value: impl Into<String>) { self.headers.insert(key.into(), value.into()); }
+    pub fn get_header(&self, key: &str) -> Option<&str> { self.headers.get(key).map(|s| s.as_str()) }
+    pub fn elapsed_ms(&self) -> i64 { (Utc::now() - self.created_at).num_milliseconds() }
 
-    /// Get a metadata value.
-    pub fn get_meta(&self, key: &str) -> Option<&Value> {
-        self.meta.get(key)
-    }
+    pub fn copy(&self) -> Self { self.clone() }
 
-    /// Elapsed time in milliseconds since context creation.
-    pub fn elapsed_ms(&self) -> i64 {
-        (Utc::now() - self.created_at).num_milliseconds()
-    }
-
-    /// Convert to a serializable snapshot for logging / tracing.
     pub fn snapshot(&self) -> ContextSnapshot {
         ContextSnapshot {
-            id: self.id.clone(),
-            action: self.action.clone(),
-            event: self.event.clone(),
-            node_id: self.node_id.clone(),
-            level: self.level,
-            span_id: self.span_id.clone(),
+            id: self.id.clone(), request_id: self.request_id.clone(),
+            action: self.action.clone(), event: self.event.clone(),
+            node_id: self.node_id.clone(), caller: self.caller.clone(),
+            level: self.level, span_id: self.span_id.clone(),
             parent_span_id: self.parent_span_id.clone(),
+            trace_id: self.trace_id.clone(),
             created_at: self.created_at,
         }
     }
@@ -132,11 +137,14 @@ impl Context {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContextSnapshot {
     pub id: String,
+    pub request_id: String,
     pub action: Option<String>,
     pub event: Option<String>,
     pub node_id: Option<String>,
+    pub caller: Option<String>,
     pub level: u32,
     pub span_id: Option<String>,
     pub parent_span_id: Option<String>,
+    pub trace_id: Option<String>,
     pub created_at: DateTime<Utc>,
 }
