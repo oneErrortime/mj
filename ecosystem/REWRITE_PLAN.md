@@ -65,7 +65,7 @@ Will be adapted to use action-call pattern over HTTP.
 ## Progress
 
 - [x] Step 0 — Analysis & plan (this document)
-- [ ] Step 1 — `moleculer-rs-client` package
-- [ ] Step 2 — `moleculer-channels` rewrite
-- [ ] Step 3 — `moleculer-workflows` rewrite
-- [ ] Step 4 — `moleculer-database` rewrite
+- [x] Step 1 — `moleculer-rs-client` package (HTTP client + compat shim)
+- [x] Step 2 — `moleculer-channels` rewrite (all adapters fixed, loads cleanly)
+- [x] Step 3 — `moleculer-workflows` rewrite (TypeScript, `tsc --noEmit` = 0 errors)
+- [x] Step 4 — `moleculer-database` rewrite (all imports fixed, loads cleanly)
