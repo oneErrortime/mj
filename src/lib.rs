@@ -1,57 +1,59 @@
-//! # moleculer-rs
+//! # moleculer-rs  🦀
 //!
 //! Full-featured Rust port of [Moleculer.js](https://moleculer.services) —
 //! a progressive microservices framework.
 //!
-//! ## What is implemented
+//! Includes ports of:
+//! - `moleculer`          — core framework
+//! - `@moleculer/channels` — durable message queues
+//! - `@moleculer/database` — CRUD service mixin
+//! - `moleculerjs/workflows` — declarative step pipelines
 //!
-//! | Feature                  | Status | Notes                                    |
-//! |--------------------------|--------|------------------------------------------|
-//! | ServiceBroker            | ✅     | call / emit / broadcast / ping           |
-//! | ServiceSchema            | ✅     | actions, events, hooks, mixins           |
-//! | Context                  | ✅     | params, meta, tracing, call level        |
-//! | Service Registry         | ✅     | local catalog, endpoint resolution       |
-//! | Load Balancing           | ✅     | Round-Robin, Random, Shard               |
-//! | Circuit Breaker          | ✅     | Closed/HalfOpen/Open + metrics           |
-//! | Retry Policy             | ✅     | Exponential backoff, retryable flag      |
-//! | Bulkhead                 | ✅     | Semaphore + overflow queue per action    |
-//! | Cacher                   | ✅     | Memory LRU + key generation              |
-//! | Middleware pipeline      | ✅     | localAction, localEvent, full hooks      |
-//! | Action hooks             | ✅     | before / after / error                  |
-//! | Mixins                   | ✅     | Schema composition / merge               |
-//! | Transporter              | ✅     | Trait + in-process LocalTransporter      |
-//! | Metrics                  | ✅     | Counter, Gauge, Histogram + reporters    |
-//! | Distributed Tracing      | ✅     | SpanStore, parent/child spans            |
-//! | **Channels**             | ✅     | `@moleculer/channels` equivalent         |
-//! | Channels: In-memory      | ✅     | Tokio MPSC-backed                        |
-//! | Channels: Dead Letter Q  | ✅     | configurable DLQ per channel             |
-//! | Channels: Consumer Group | ✅     | group-based competing consumers          |
-//! | Channels: ACK/NACK       | ✅     | explicit acknowledgement                 |
-//! | Laboratory Agent         | ✅     | HTTP API + topology graph                |
-//! | Lab: Metrics reporter    | ✅     |                                          |
-//! | Lab: Trace exporter      | ✅     |                                          |
-//! | Lab: Event logger        | ✅     |                                          |
-//! | Lab: Topology tracking   | ✅     | service call graph (who calls whom)      |
+//! ## Feature flags
 //!
-//! ## Quick start
+//! | Flag       | Enables                                              |
+//! |------------|------------------------------------------------------|
+//! | `nats`     | NATS transporter + JetStream channel adapter         |
+//! | `redis`    | Redis transporter, cacher, channel adapter           |
+//! | `amqp`     | AMQP (RabbitMQ) channel adapter                      |
+//! | `kafka`    | Kafka channel adapter                                |
+//! | `msgpack`  | MessagePack serializer                               |
+//! | `jaeger`   | Jaeger tracing exporter                              |
+//! | `zipkin`   | Zipkin tracing exporter                              |
+//! | `full`     | All of the above                                     |
 //!
-//! ```rust,no_run
-//! use moleculer::prelude::*;
-//! use serde_json::json;
+//! ## Architecture
 //!
-//! #[tokio::main]
-//! async fn main() {
-//!     let broker = ServiceBroker::new(BrokerConfig::default());
-//!     broker.add_service(
-//!         ServiceSchema::new("math")
-//!             .action(ActionDef::new("add", |ctx| async move {
-//!                 let a = ctx.params["a"].as_f64().unwrap_or(0.0);
-//!                 let b = ctx.params["b"].as_f64().unwrap_or(0.0);
-//!                 Ok(json!({ "result": a + b }))
-//!             }))
-//!     ).await;
-//!     broker.start().await.unwrap();
-//! }
+//! ```text
+//! ┌─────────────────────────────────────────────────────────────────────┐
+//! │                        ServiceBroker                                │
+//! │                                                                     │
+//! │  ┌──────────────┐   ┌──────────────────────────────────────────┐   │
+//! │  │   Registry   │   │          Middleware Pipeline              │   │
+//! │  │  • services  │   │  Log → Metrics → Trace → Timeout →       │   │
+//! │  │  • actions   │   │  Retry → CircuitBreaker → Bulkhead →     │   │
+//! │  │  • events    │   │  Throttle → Fallback → Cacher            │   │
+//! │  │  • nodes     │   └──────────────────────────────────────────┘   │
+//! │  │  • topology  │                                                   │
+//! │  └──────────────┘   ┌──────────────┐  ┌───────────┐               │
+//! │                      │   Channels   │  │  Metrics  │               │
+//! │  ┌──────────────┐   │  • InMemory  │  │  Counter  │               │
+//! │  │  LRU Cacher  │   │  • Redis     │  │  Gauge    │               │
+//! │  │  Redis Cache │   │  • AMQP      │  │  Histogr. │               │
+//! │  └──────────────┘   │  • NATS JS   │  └───────────┘               │
+//! │                      │  • Kafka     │                               │
+//! │  ┌─────────────┐    └──────────────┘                               │
+//! │  │ Transporters│    ┌─────────────────────────────────────────┐    │
+//! │  │  • Local    │    │           Tracing                       │    │
+//! │  │  • TCP/UDP  │    │  • Console  • Jaeger  • Zipkin          │    │
+//! │  │  • NATS     │    │  • Datadog  • Event                     │    │
+//! │  │  • Redis    │    └─────────────────────────────────────────┘    │
+//! │  └─────────────┘                                                   │
+//! │  ┌──────────────────────────────────────────────────────────────┐  │
+//! │  │                 Laboratory Agent (:3210)                     │  │
+//! │  │  /health /info /services /topology /metrics /traces /logs   │  │
+//! │  └──────────────────────────────────────────────────────────────┘  │
+//! └─────────────────────────────────────────────────────────────────────┘
 //! ```
 
 pub mod broker;
@@ -72,11 +74,19 @@ pub mod service;
 pub mod transporter;
 pub mod metrics;
 pub mod tracing;
+pub mod lock;
+pub mod runner;
+pub mod internals;
 
 #[cfg(feature = "laboratory")]
 pub mod laboratory;
 
-/// Convenience re-exports for common use.
+#[cfg(feature = "database")]
+pub mod database;
+
+pub mod workflows;
+
+/// Convenience re-exports.
 pub mod prelude {
     pub use crate::broker::ServiceBroker;
     pub use crate::config::BrokerConfig;
@@ -85,6 +95,12 @@ pub mod prelude {
     pub use crate::service::{ActionDef, EventDef, ServiceSchema};
     pub use crate::channels::{ChannelDef, ChannelMessage};
     pub use crate::middleware::Middleware;
+    pub use crate::runner::Runner;
+
+    #[cfg(feature = "database")]
+    pub use crate::database::{DatabaseMixin, MemoryAdapter, DatabaseOptions, database_service};
+
+    pub use crate::workflows::{Workflow, Step, WorkflowService};
 }
 
 pub use prelude::*;

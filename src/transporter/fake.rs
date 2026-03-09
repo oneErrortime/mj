@@ -459,3 +459,8 @@ mod tests {
         assert_eq!(recs[2].kind, PacketKind::Heartbeat);
     }
 }
+
+// Convenience constructor used in create_transporter()
+impl FakeTransporter {
+    pub fn with_defaults() -> Self { Self::new(FakeTransporterOptions::default()) }
+}

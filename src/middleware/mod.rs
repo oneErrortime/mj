@@ -81,3 +81,9 @@ impl Middleware for MetricsMiddleware {
         result
     }
 }
+
+pub mod extra;
+pub mod transmit;
+
+pub use extra::{ThrottleMiddleware, DebounceMiddleware, FallbackMiddleware, ContextTrackerMiddleware};
+pub use transmit::{TransmitCodec, CompressorCodec, EncryptorCodec, CompressionMethod};

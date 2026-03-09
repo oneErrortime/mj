@@ -84,3 +84,6 @@ impl MemoryLruCacher {
         for k in keys { cache.pop(&k); }
     }
 }
+
+pub mod redis_cacher;
+pub use redis_cacher::{RedisCacher, RedisCacherOptions, Cacher};

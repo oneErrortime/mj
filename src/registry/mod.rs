@@ -275,3 +275,6 @@ impl ServiceRegistry {
         }
     }
 }
+
+pub mod discoverers;
+pub use discoverers::{Discoverer, LocalDiscoverer, RedisDiscoverer, Etcd3Discoverer};

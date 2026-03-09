@@ -110,3 +110,9 @@ impl SpanStore {
 }
 
 impl Default for SpanStore { fn default() -> Self { Self::new() } }
+
+pub mod exporters;
+pub use exporters::{
+    SpanExporter, ExporterRegistry,
+    ConsoleExporter, JaegerExporter, ZipkinExporter, DatadogExporter, EventExporter,
+};
