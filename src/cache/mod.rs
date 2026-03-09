@@ -2,7 +2,7 @@
 
 use lru::LruCache;
 use std::num::NonZeroUsize;
-use std::sync::Mutex;
+use std::sync::{Mutex, atomic::{AtomicU64, Ordering}};
 use chrono::{DateTime, Utc};
 use serde_json::Value;
 
@@ -19,6 +19,8 @@ impl CacheEntry {
 pub struct MemoryLruCacher {
     inner: Mutex<LruCache<String, CacheEntry>>,
     default_ttl: Option<u64>,
+    pub hits: AtomicU64,
+    pub misses: AtomicU64,
 }
 
 impl MemoryLruCacher {
@@ -28,6 +30,8 @@ impl MemoryLruCacher {
                 NonZeroUsize::new(capacity).unwrap_or(NonZeroUsize::new(1000).unwrap())
             )),
             default_ttl: None,
+            hits: AtomicU64::new(0),
+            misses: AtomicU64::new(0),
         }
     }
     pub fn with_ttl(mut self, ttl_secs: u64) -> Self { self.default_ttl = Some(ttl_secs); self }
@@ -42,8 +46,15 @@ impl MemoryLruCacher {
     pub fn get(&self, key: &str) -> Option<Value> {
         let mut cache = self.inner.lock().unwrap();
         match cache.get(key) {
-            Some(e) if !e.is_expired() => Some(e.value.clone()),
-            _ => { cache.pop(key); None }
+            Some(e) if !e.is_expired() => {
+                self.hits.fetch_add(1, Ordering::Relaxed);
+                Some(e.value.clone())
+            },
+            _ => {
+                cache.pop(key);
+                self.misses.fetch_add(1, Ordering::Relaxed);
+                None
+            }
         }
     }
 
@@ -56,6 +67,16 @@ impl MemoryLruCacher {
     pub fn delete(&self, key: &str) { self.inner.lock().unwrap().pop(key); }
     pub fn clear(&self) { self.inner.lock().unwrap().clear(); }
     pub fn len(&self) -> usize { self.inner.lock().unwrap().len() }
+
+    /// Snapshot of cache keys (up to `limit`) for the Lab UI.
+    pub fn keys_snapshot(&self, limit: usize) -> Vec<String> {
+        let cache = self.inner.lock().unwrap();
+        cache.iter()
+            .filter(|(_, e)| !e.is_expired())
+            .take(limit)
+            .map(|(k, _)| k.clone())
+            .collect()
+    }
 
     pub fn clean_prefix(&self, prefix: &str) {
         let mut cache = self.inner.lock().unwrap();

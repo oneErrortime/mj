@@ -35,6 +35,7 @@ pub struct ServiceBroker {
     pub spans: Arc<SpanStore>,
     pub cacher: Option<Arc<MemoryLruCacher>>,
     pub channel_adapter: Option<Arc<dyn Adapter>>,
+    pub cb_middleware: Option<Arc<CircuitBreakerMiddleware>>,
     middlewares: Arc<RwLock<Vec<Arc<dyn Middleware>>>>,
     running: Arc<RwLock<bool>>,
 }
@@ -60,6 +61,10 @@ impl ServiceBroker {
             }
         } else { None };
 
+        let cb_middleware: Option<Arc<CircuitBreakerMiddleware>> = if config.circuit_breaker.enabled {
+            Some(Arc::new(CircuitBreakerMiddleware::new(config.circuit_breaker.clone())))
+        } else { None };
+
         Arc::new(Self {
             node_id: node_id.clone(),
             instance_id: Uuid::new_v4().to_string(),
@@ -68,6 +73,7 @@ impl ServiceBroker {
             spans: Arc::new(SpanStore::new()),
             cacher,
             channel_adapter,
+            cb_middleware,
             middlewares: Arc::new(RwLock::new(Vec::new())),
             running: Arc::new(RwLock::new(false)),
             config: Arc::new(config),
@@ -97,7 +103,9 @@ impl ServiceBroker {
         }
 
         if cfg.circuit_breaker.enabled {
-            self.add_middleware(Arc::new(CircuitBreakerMiddleware::new(cfg.circuit_breaker.clone()))).await;
+            if let Some(ref cb) = self.cb_middleware {
+                self.add_middleware(Arc::clone(cb)).await;
+            }
         }
 
         if cfg.bulkhead.enabled {
