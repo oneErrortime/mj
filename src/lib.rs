@@ -57,6 +57,7 @@
 pub mod broker;
 pub mod cache;
 pub mod constants;
+pub mod health;
 pub mod channels;
 pub mod config;
 pub mod context;
