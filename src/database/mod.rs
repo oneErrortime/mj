@@ -599,3 +599,6 @@ pub fn database_service(name: &str, adapter: impl DbAdapter + 'static) -> Servic
     let mixin = DatabaseMixin::new(adapter);
     mixin.apply(ServiceSchema::new(name))
 }
+
+pub mod adapters;
+pub use adapters::{NeDbAdapter, MongoAdapter, SqlAdapter};

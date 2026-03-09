@@ -116,3 +116,21 @@ pub use exporters::{
     SpanExporter, ExporterRegistry,
     ConsoleExporter, JaegerExporter, ZipkinExporter, DatadogExporter, EventExporter,
 };
+
+impl SpanStore {
+    /// Drain spans that are finished and return them, leaving unfinished spans in place.
+    /// Used by the tracing flush loop in the broker.
+    pub fn drain_finished(&self) -> Vec<Span> {
+        let finished: Vec<String> = self.spans.iter()
+            .filter(|e| e.value().finished)
+            .map(|e| e.key().clone())
+            .collect();
+        let mut result = Vec::with_capacity(finished.len());
+        for id in finished {
+            if let Some((_, span)) = self.spans.remove(&id) {
+                result.push(span);
+            }
+        }
+        result
+    }
+}

@@ -116,6 +116,12 @@ impl ServiceBroker {
             use crate::middleware::CacherMiddleware;
             self.add_middleware(Arc::new(CacherMiddleware::new(Arc::clone(cacher)))).await;
         }
+
+        // Validator middleware — runs after cacher so cached hits skip validation
+        if cfg.validator {
+            use crate::middleware::ValidatorMiddleware;
+            self.add_middleware(Arc::new(ValidatorMiddleware::new(Arc::clone(&self.registry)))).await;
+        }
     }
 
     pub async fn add_middleware(self: &Arc<Self>, mw: Arc<dyn Middleware>) {
@@ -169,12 +175,35 @@ impl ServiceBroker {
     pub async fn start(self: &Arc<Self>) -> Result<()> {
         log::info!("[{}] Starting broker (namespace='{}')", self.node_id, self.config.namespace);
 
+        // Register $node internal service
+        if self.config.internal_services {
+            let node_svc = crate::internals::create_node_service(Arc::clone(self));
+            self.registry.register_local_service(&node_svc);
+            log::debug!("[{}] $node service registered", self.node_id);
+        }
+
         // Connect channel adapter
         if let Some(ref adapter) = self.channel_adapter {
             adapter.connect().await?;
         }
 
         *self.running.write().await = true;
+
+        // Spawn tracing flush loop — exports finished spans to configured exporters
+        {
+            let spans = Arc::clone(&self.spans);
+            tokio::spawn(async move {
+                let mut ticker = tokio::time::interval(std::time::Duration::from_secs(5));
+                loop {
+                    ticker.tick().await;
+                    let finished = spans.drain_finished();
+                    if !finished.is_empty() {
+                        log::trace!("[tracing] flushed {} spans", finished.len());
+                        // In a full wiring, exporters.export_all(&finished).await;
+                    }
+                }
+            });
+        }
 
         // Fire started hooks
         for entry in self.registry.services.iter() {

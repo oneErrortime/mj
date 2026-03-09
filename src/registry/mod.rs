@@ -276,5 +276,11 @@ impl ServiceRegistry {
     }
 }
 
+    /// Find the first available endpoint for an action (for validation / introspection).
+    pub fn find_action(&self, action_key: &str) -> Option<ActionEndpoint> {
+        self.actions.get(action_key).and_then(|v| v.first().cloned())
+    }
+}
+
 pub mod discoverers;
 pub use discoverers::{Discoverer, LocalDiscoverer, RedisDiscoverer, Etcd3Discoverer};

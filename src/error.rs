@@ -63,6 +63,9 @@ pub enum MoleculerError {
     Cache(String),
 
     // ------ Generic ------
+    #[error("Validation failed: {0}")]
+    ValidationFailed(String),
+
     #[error("Internal error: {0}")]
     Internal(String),
 

@@ -167,6 +167,8 @@ pub struct BrokerConfig {
     pub context_params_cloning: bool,
     /// Register internal $node service.
     pub internal_services: bool,
+    /// Enable parameter validation middleware.
+    pub validator: bool,
     pub metadata: serde_json::Value,
 }
 
@@ -192,6 +194,7 @@ impl Default for BrokerConfig {
             transit: Default::default(),
             context_params_cloning: false,
             internal_services: true,
+            validator: true,
             metadata: serde_json::Value::Object(Default::default()),
         }
     }

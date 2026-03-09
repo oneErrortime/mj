@@ -101,6 +101,15 @@ pub mod prelude {
     pub use crate::database::{DatabaseMixin, MemoryAdapter, DatabaseOptions, database_service};
 
     pub use crate::workflows::{Workflow, Step, WorkflowService};
+    pub use crate::streaming::{ActionStream, StreamSender, stream_channel};
+    pub use crate::metrics::{MetricsRegistry, MetricEntry};
+
+    #[cfg(feature = "database")]
+    pub use crate::database::{NeDbAdapter, MongoAdapter, SqlAdapter};
 }
 
 pub use prelude::*;
+
+pub mod streaming;
+
+pub mod hotreload;
