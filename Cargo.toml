@@ -1,0 +1,41 @@
+[package]
+name = "moleculer-rs"
+version = "0.1.0"
+edition = "2021"
+description = "Moleculer microservices framework — Rust port"
+license = "MIT"
+repository = "https://github.com/oneErrortime/mj"
+keywords = ["microservices", "moleculer", "framework", "broker", "distributed"]
+
+[lib]
+name = "moleculer"
+path = "src/lib.rs"
+
+[[bin]]
+name = "moleculer-rs"
+path = "src/main.rs"
+
+[[example]]
+name = "basic"
+path = "examples/basic.rs"
+
+[features]
+default = ["laboratory"]
+laboratory = []
+
+[dependencies]
+tokio       = { version = "=1.38.0", features = ["full"] }
+async-trait = "0.1"
+serde       = { version = "1", features = ["derive"] }
+serde_json  = "1"
+uuid        = { version = "=1.6.1", features = ["v4"] }
+log         = "0.4"
+env_logger  = "=0.10.2"
+thiserror   = "=1.0.61"
+dashmap     = "=5.5.3"
+chrono      = { version = "=0.4.38", features = ["serde"] }
+rand        = "=0.8.5"
+tiny_http   = "=0.12.0"
+
+[dev-dependencies]
+tokio-test = "0.4"
