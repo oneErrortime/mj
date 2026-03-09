@@ -1,7 +1,7 @@
 "use strict";
 
-const { ServiceBroker, Context } = require("moleculer");
-const { ValidationError } = require("moleculer").Errors;
+const { ServiceBroker, Context } = require("moleculer-rs-client/src/compat");
+const { ValidationError } = require("moleculer-rs-client/src/compat").Errors;
 const DbService = require("../..").Service;
 
 describe("Test validation", () => {

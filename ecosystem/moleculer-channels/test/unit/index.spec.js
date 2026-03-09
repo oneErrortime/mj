@@ -1,6 +1,6 @@
 "use strict";
 
-const { ServiceBroker } = require("moleculer");
+const { ServiceBroker } = require("moleculer-rs-client/src/compat");
 const ChannelMiddleware = require("./../../").Middleware;
 
 describe("Test service 'channelHandlerTrigger' method", () => {
@@ -9,7 +9,6 @@ describe("Test service 'channelHandlerTrigger' method", () => {
 
 		channels: {
 			async "helper.sum"(payload) {
-				// Calls the sum method
 				return this.sum(payload.a, payload.b);
 			},
 
@@ -47,30 +46,18 @@ describe("Test service 'channelHandlerTrigger' method", () => {
 		afterAll(() => broker.stop());
 
 		it("should register default 'emitLocalChannelHandler' function declaration", async () => {
-			// Mock the "sum" method
 			service.sum = jest.fn();
-
-			// Call the "helper.sum" handler
 			await service.emitLocalChannelHandler("helper.sum", { a: 5, b: 5 });
-			// Check if "sum" method was called
 			expect(service.sum).toBeCalledTimes(1);
 			expect(service.sum).toBeCalledWith(5, 5);
-
-			// Restore the "sum" method
 			service.sum.mockRestore();
 		});
 
 		it("should register default 'emitLocalChannelHandler' object declaration", async () => {
-			// Mock the "sum" method
 			service.subtract = jest.fn();
-
-			// Call the "helper.sum" handler
 			await service.emitLocalChannelHandler("helper.subtract", { a: 5, b: 5 });
-			// Check if "subtract" method was called
 			expect(service.subtract).toBeCalledTimes(1);
 			expect(service.subtract).toBeCalledWith(5, 5);
-
-			// Restore the "subtract" method
 			service.subtract.mockRestore();
 		});
 	});
@@ -92,16 +79,10 @@ describe("Test service 'channelHandlerTrigger' method", () => {
 		afterAll(() => broker.stop());
 
 		it("should register with 'myTrigger'", async () => {
-			// Mock the "sum" method
 			service.sum = jest.fn();
-
-			// Call the "helper.sum" handler
 			await service.myTrigger("helper.sum", { a: 5, b: 5 });
-			// Check if "sum" method was called
 			expect(service.sum).toBeCalledTimes(1);
 			expect(service.sum).toBeCalledWith(5, 5);
-
-			// Restore the "sum" method
 			service.sum.mockRestore();
 		});
 	});

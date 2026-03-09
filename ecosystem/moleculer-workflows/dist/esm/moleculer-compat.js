@@ -90,3 +90,10 @@ export const Utils = {
     },
     makeDirs: (_path) => { },
 };
+// ─── Concrete ServiceBroker (re-exported from moleculer-rs-client) ───────────
+// Uses Function constructor to get a require that works in both CJS and ESM
+// compiled output without import.meta, which is not available under --module commonjs.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+import { createRequire as _createRequire } from "module";
+const _rsCompat = _createRequire(import.meta.url)("moleculer-rs-client/src/compat");
+export const ServiceBrokerClass = _rsCompat.ServiceBroker;

@@ -1,6 +1,6 @@
 import { describe, expect, it, afterEach } from "vitest";
 
-import { ServiceBroker } from "moleculer";
+import { ServiceBrokerClass as ServiceBroker } from "../../src/moleculer-compat.ts";
 import WorkflowsMiddleware from "../../src/middleware.ts";
 import { WorkflowsMiddlewareOptions } from "../../src/types.ts";
 import { delay } from "../utils";

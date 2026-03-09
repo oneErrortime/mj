@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Errors } from "moleculer";
+import { Errors } from "../../src/moleculer-compat.ts";
 import { Adapters } from "../../src/index.ts";
 
 describe("Test Adapter resolver", () => {

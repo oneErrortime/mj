@@ -6,7 +6,7 @@
  * Used by moleculer-workflows so it can run without the full moleculer package.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Utils = exports.Serializers = exports.JsonSerializer = exports.METRIC = exports.Errors = exports.BrokerOptionsError = exports.ValidationError = exports.ServiceSchemaError = exports.MoleculerClientError = exports.MoleculerRetryableError = exports.MoleculerError = void 0;
+exports.ServiceBrokerClass = exports.Utils = exports.Serializers = exports.JsonSerializer = exports.METRIC = exports.Errors = exports.BrokerOptionsError = exports.ValidationError = exports.ServiceSchemaError = exports.MoleculerClientError = exports.MoleculerRetryableError = exports.MoleculerError = void 0;
 // ─── Errors ──────────────────────────────────────────────────────────────────
 class MoleculerError extends Error {
     code;
@@ -100,3 +100,13 @@ exports.Utils = {
     },
     makeDirs: (_path) => { },
 };
+// ─── Concrete ServiceBroker (re-exported from moleculer-rs-client) ───────────
+// Uses Function constructor to get a require that works in both CJS and ESM
+// compiled output without import.meta, which is not available under --module commonjs.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const _rsCompat = new Function('require', 'return require("moleculer-rs-client/src/compat")')(
+// In CJS the module-scoped require is available; in ESM we fall back to
+// Node's global module loader through the Function constructor.
+// eslint-disable-next-line no-undef, @typescript-eslint/no-explicit-any
+typeof require !== "undefined" ? require : module.createRequire(__filename));
+exports.ServiceBrokerClass = _rsCompat.ServiceBroker;

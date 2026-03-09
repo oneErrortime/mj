@@ -1,8 +1,8 @@
 import { describe, expect, it, beforeAll, afterAll } from "vitest";
 
-import { ServiceBroker } from "moleculer";
+import { ServiceBrokerClass as ServiceBroker } from "../../src/moleculer-compat.ts";
 import WorkflowsMiddleware from "../../src/middleware.ts";
-import { Errors } from "moleculer";
+import { Errors } from "../../src/moleculer-compat.ts";
 
 import "../vitest-extensions.ts";
 
