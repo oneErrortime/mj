@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>moleculer-rs — Docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- marked.js — markdown renderer -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+  <!-- highlight.js — syntax highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/rust.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0b0b13;
+      --bg2:       #0f0f1a;
+      --bg3:       #14142a;
+      --bg4:       #1a1a35;
+      --border:    #1f1f3a;
+      --border2:   #2a2a4a;
+      --accent:    #f97316;
+      --accent2:   #fb923c;
+      --accent-dim:rgba(249,115,22,.12);
+      --cyan:      #22d3ee;
+      --green:     #4ade80;
+      --green-dim: rgba(74,222,128,.1);
+      --red:       #f87171;
+      --yellow:    #fbbf24;
+      --purple:    #a78bfa;
+      --text:      #e8e8f0;
+      --text-mid:  #9898b8;
+      --text-dim:  #5a5a78;
+      --mono:      'JetBrains Mono', monospace;
+      --sans:      'Inter', sans-serif;
+      --sidebar-w: 272px;
+      --topbar-h:  52px;
+    }
+
+    html { scroll-behavior: smooth; }
+    html, body { height: 100%; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* subtle grid */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(249,115,22,.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(249,115,22,.015) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    /* ─── TOP BAR ─────────────────── */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 300;
+      height: var(--topbar-h);
+      background: rgba(11,11,19,.9);
+      backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 0;
+      padding: 0 20px;
+    }
+
+    .topbar-logo {
+      display: flex; align-items: center; gap: 8px;
+      font-family: var(--mono); font-size: 14px; font-weight: 600;
+      color: var(--text); text-decoration: none;
+      flex-shrink: 0; margin-right: 24px;
+    }
+    .topbar-logo em { color: var(--accent); font-style: normal; }
+
+    .topbar-pill {
+      font-family: var(--mono); font-size: 10px; font-weight: 700;
+      background: var(--accent-dim); color: var(--accent);
+      border: 1px solid rgba(249,115,22,.25);
+      padding: 2px 7px; border-radius: 100px;
+      margin-left: 4px;
+    }
+
+    .topbar-search-wrap {
+      flex: 1; max-width: 360px;
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 8px; padding: 6px 14px;
+      cursor: pointer; transition: border-color .2s;
+    }
+    .topbar-search-wrap:hover { border-color: var(--border2); }
+    .topbar-search-icon { color: var(--text-dim); font-size: 14px; }
+    .topbar-search-text { font-family: var(--mono); font-size: 12px; color: var(--text-dim); flex: 1; }
+    .topbar-search-kbd {
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+      background: var(--bg4); border: 1px solid var(--border2);
+      border-radius: 4px; padding: 2px 6px;
+    }
+
+    .topbar-right {
+      margin-left: auto; display: flex; align-items: center; gap: 4px;
+    }
+
+    .topbar-link {
+      font-size: 13px; font-weight: 500; color: var(--text-mid);
+      text-decoration: none; padding: 5px 12px; border-radius: 6px;
+      transition: color .15s, background .15s;
+    }
+    .topbar-link:hover { color: var(--text); background: var(--bg3); }
+
+    .topbar-github {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; font-weight: 500; color: var(--text-mid);
+      text-decoration: none; padding: 5px 12px; border-radius: 6px;
+      transition: color .15s, background .15s;
+    }
+    .topbar-github:hover { color: var(--text); background: var(--bg3); }
+
+    .topbar-lab {
+      background: var(--accent); color: #000;
+      font-size: 12px; font-weight: 700;
+      padding: 5px 14px; border-radius: 6px;
+      text-decoration: none; transition: background .2s;
+      margin-left: 4px;
+    }
+    .topbar-lab:hover { background: var(--accent2); }
+
+    .mobile-toggle {
+      display: none; background: none; border: none; cursor: pointer;
+      color: var(--text-mid); font-size: 20px; padding: 4px 8px;
+      margin-right: 8px;
+    }
+    @media (max-width: 768px) { .mobile-toggle { display: block; } }
+
+    /* ─── LAYOUT ──────────────────── */
+    .layout {
+      display: flex;
+      margin-top: var(--topbar-h);
+      min-height: calc(100vh - var(--topbar-h));
+      position: relative; z-index: 1;
+    }
+
+    /* ─── SIDEBAR ─────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      position: sticky; top: var(--topbar-h);
+      height: calc(100vh - var(--topbar-h));
+      overflow-y: auto;
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      padding: 20px 0 64px;
+      transition: transform .2s;
+    }
+
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-track { background: transparent; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .sidebar-group { margin-bottom: 4px; }
+
+    .sidebar-group-label {
+      font-family: var(--mono); font-size: 10px; font-weight: 700;
+      color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px;
+      padding: 10px 20px 5px;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .sidebar-item {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 13.5px; font-weight: 400;
+      color: var(--text-mid); text-decoration: none;
+      padding: 7px 20px;
+      border-left: 2px solid transparent;
+      cursor: pointer; transition: color .12s, background .12s, border-color .12s;
+      user-select: none;
+    }
+    .sidebar-item:hover {
+      color: var(--text); background: rgba(249,115,22,.04);
+    }
+    .sidebar-item.active {
+      color: var(--text); background: var(--accent-dim);
+      border-left-color: var(--accent);
+      font-weight: 500;
+    }
+    .sidebar-item-icon { margin-right: 8px; font-size: 14px; opacity: .8; }
+    .sidebar-item-badge {
+      font-family: var(--mono); font-size: 9px; font-weight: 700;
+      padding: 2px 6px; border-radius: 4px; margin-left: auto;
+    }
+    .badge-done  { background: var(--green-dim); color: var(--green); }
+    .badge-js    { background: rgba(251,191,36,.1); color: var(--yellow); }
+    .badge-plan  { background: var(--bg4); color: var(--text-dim); }
+
+    .sidebar-divider {
+      border: none; border-top: 1px solid var(--border);
+      margin: 10px 18px;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed; top: var(--topbar-h); left: 0; z-index: 250;
+        transform: translateX(-100%);
+      }
+      .sidebar.open { transform: translateX(0); }
+    }
+
+    /* ─── MAIN CONTENT ────────────── */
+    .main {
+      flex: 1; min-width: 0;
+      display: flex; justify-content: center;
+    }
+
+    .content-wrap {
+      width: 100%; max-width: 820px;
+      padding: 56px 48px 120px;
+    }
+
+    @media (max-width: 1024px) { .content-wrap { padding: 40px 32px 100px; } }
+    @media (max-width: 768px)  { .content-wrap { padding: 32px 20px 80px; } }
+
+    /* loading state */
+    .loading {
+      display: flex; align-items: center; justify-content: center;
+      height: 200px; color: var(--text-dim); font-family: var(--mono); font-size: 13px;
+    }
+    .loading::before {
+      content: ''; width: 16px; height: 16px;
+      border: 2px solid var(--border2); border-top-color: var(--accent);
+      border-radius: 50%; margin-right: 12px;
+      animation: spin .6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── MARKDOWN STYLES ─────────── */
+    .md h1 {
+      font-family: var(--mono); font-size: clamp(24px, 3.5vw, 36px);
+      font-weight: 700; letter-spacing: -1px; line-height: 1.15;
+      color: var(--text); margin: 0 0 24px;
+      padding-bottom: 20px; border-bottom: 1px solid var(--border);
+    }
+
+    .md h2 {
+      font-family: var(--mono); font-size: 20px; font-weight: 700;
+      letter-spacing: -.5px; color: var(--text);
+      margin: 52px 0 16px; padding-top: 8px;
+    }
+    .md h2:first-of-type { margin-top: 24px; }
+
+    .md h3 {
+      font-family: var(--mono); font-size: 15px; font-weight: 600;
+      color: var(--text); margin: 32px 0 12px;
+    }
+
+    .md h4 {
+      font-family: var(--mono); font-size: 13px; font-weight: 600;
+      color: var(--accent); margin: 24px 0 8px;
+    }
+
+    .md p {
+      color: var(--text-mid); line-height: 1.8;
+      margin: 0 0 18px;
+    }
+    .md p:last-child { margin-bottom: 0; }
+
+    .md a { color: var(--accent); text-decoration: none; }
+    .md a:hover { text-decoration: underline; }
+
+    .md strong { color: var(--text); font-weight: 600; }
+    .md em     { color: var(--text-mid); font-style: italic; }
+
+    /* code inline */
+    .md code {
+      font-family: var(--mono); font-size: 12.5px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 4px; padding: 2px 6px;
+      color: var(--cyan);
+    }
+
+    /* code blocks */
+    .md pre {
+      background: #0d1117; border: 1px solid var(--border);
+      border-radius: 10px; overflow-x: auto;
+      margin: 6px 0 24px;
+      position: relative;
+    }
+    .md pre code {
+      background: none; border: none; padding: 20px 24px;
+      display: block; font-size: 13px; line-height: 1.7;
+      color: #cdd9e5;
+    }
+    .md pre .hljs { padding: 20px 24px; border-radius: 10px; font-size: 13px; }
+
+    /* code block header bar */
+    .code-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 16px;
+      background: #161b22; border-bottom: 1px solid #30363d;
+      border-radius: 10px 10px 0 0;
+    }
+    .code-header + .md pre,
+    .code-header ~ .md pre { border-radius: 0 0 10px 10px; }
+
+    .code-lang-tag {
+      font-family: var(--mono); font-size: 10px; color: #8b949e;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+
+    .copy-btn {
+      font-family: var(--mono); font-size: 10px; color: #8b949e;
+      background: #21262d; border: 1px solid #30363d;
+      border-radius: 4px; padding: 3px 10px; cursor: pointer;
+      transition: color .15s, background .15s;
+    }
+    .copy-btn:hover { color: #e6edf3; background: #30363d; }
+
+    /* tables */
+    .md table {
+      width: 100%; border-collapse: collapse;
+      font-size: 13.5px; margin: 6px 0 24px;
+      border: 1px solid var(--border); border-radius: 8px;
+      overflow: hidden;
+    }
+    .md th {
+      text-align: left; padding: 10px 16px;
+      background: var(--bg3);
+      font-family: var(--mono); font-size: 10px; font-weight: 700;
+      color: var(--accent); text-transform: uppercase; letter-spacing: 1px;
+      border-bottom: 1px solid var(--border);
+    }
+    .md td {
+      padding: 10px 16px; color: var(--text-mid);
+      border-bottom: 1px solid rgba(31,31,58,.7);
+    }
+    .md tr:last-child td { border-bottom: none; }
+    .md tr:hover td { background: rgba(255,255,255,.02); }
+    .md td code { font-size: 12px; }
+
+    /* blockquotes */
+    .md blockquote {
+      border-left: 3px solid var(--accent);
+      background: var(--accent-dim);
+      margin: 6px 0 24px; padding: 14px 20px;
+      border-radius: 0 8px 8px 0;
+    }
+    .md blockquote p {
+      color: var(--text-mid); margin: 0; font-size: 14px;
+    }
+    .md blockquote strong { color: var(--accent); }
+
+    /* lists */
+    .md ul, .md ol {
+      padding-left: 24px; margin: 0 0 20px;
+      color: var(--text-mid);
+    }
+    .md li { padding: 3px 0; line-height: 1.7; }
+    .md li code { font-size: 12px; }
+    .md li > ul, .md li > ol { margin: 4px 0 4px; }
+
+    /* horizontal rule */
+    .md hr {
+      border: none; border-top: 1px solid var(--border);
+      margin: 40px 0;
+    }
+
+    /* ─── BREADCRUMB ──────────────── */
+    .breadcrumb {
+      display: flex; align-items: center; gap: 8px;
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+      margin-bottom: 32px;
+    }
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--text-mid); }
+    .breadcrumb-sep { color: var(--border2); }
+
+    /* ─── PREV/NEXT ───────────────── */
+    .pagination {
+      display: flex; gap: 12px; margin-top: 64px;
+      padding-top: 32px; border-top: 1px solid var(--border);
+    }
+    .page-nav {
+      flex: 1; display: flex; flex-direction: column;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 20px;
+      cursor: pointer; transition: border-color .2s, background .2s;
+      text-decoration: none;
+    }
+    .page-nav:hover { border-color: var(--border2); background: var(--bg3); }
+    .page-nav-label {
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 5px;
+    }
+    .page-nav-title {
+      font-size: 14px; font-weight: 600; color: var(--text);
+    }
+    .page-nav-next { align-items: flex-end; text-align: right; }
+
+    /* ─── SEARCH MODAL ────────────── */
+    .search-overlay {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,.75); backdrop-filter: blur(6px);
+    }
+    .search-overlay.open { display: flex; align-items: flex-start; justify-content: center; padding-top: 100px; }
+
+    .search-box {
+      background: var(--bg2); border: 1px solid var(--border2);
+      border-radius: 12px; width: 600px; max-width: calc(100vw - 32px);
+      overflow: hidden; box-shadow: 0 24px 64px rgba(0,0,0,.5);
+    }
+    .search-input-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+    }
+    .search-input-row svg { color: var(--text-dim); flex-shrink: 0; }
+    .search-input {
+      flex: 1; background: none; border: none; outline: none;
+      font-family: var(--mono); font-size: 14px; color: var(--text);
+    }
+    .search-input::placeholder { color: var(--text-dim); }
+    .search-esc {
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+      background: var(--bg4); border: 1px solid var(--border2);
+      border-radius: 4px; padding: 2px 7px;
+    }
+
+    .search-results { padding: 8px; max-height: 380px; overflow-y: auto; }
+    .search-empty {
+      padding: 32px; text-align: center;
+      font-family: var(--mono); font-size: 12px; color: var(--text-dim);
+    }
+
+    .search-result {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px; border-radius: 8px; cursor: pointer;
+      text-decoration: none;
+      transition: background .12s;
+    }
+    .search-result:hover,
+    .search-result.focused { background: var(--bg3); }
+    .search-result-icon { font-size: 16px; width: 28px; text-align: center; flex-shrink: 0; }
+    .search-result-info { flex: 1; min-width: 0; }
+    .search-result-title { font-size: 13.5px; color: var(--text); font-weight: 500; }
+    .search-result-sub { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+    .search-result-arrow { color: var(--text-dim); font-size: 14px; }
+
+    .search-footer {
+      display: flex; align-items: center; gap: 16px;
+      padding: 10px 18px; border-top: 1px solid var(--border);
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+    }
+    .search-footer kbd {
+      background: var(--bg4); border: 1px solid var(--border2);
+      border-radius: 3px; padding: 1px 5px; margin-right: 4px;
+    }
+
+    /* ─── SCROLLBAR ───────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ─── HLJS OVERRIDES ──────────── */
+    .hljs { background: #0d1117 !important; }
+  </style>
+</head>
+<body>
+
+<!-- SEARCH MODAL -->
+<div class="search-overlay" id="searchOverlay">
+  <div class="search-box">
+    <div class="search-input-row">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input class="search-input" id="searchInput" placeholder="Search documentation…" autocomplete="off" />
+      <span class="search-esc">ESC</span>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+    <div class="search-footer">
+      <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+      <span><kbd>↵</kbd> Select</span>
+      <span><kbd>ESC</kbd> Close</span>
+    </div>
+  </div>
+</div>
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <button class="mobile-toggle" id="mobileToggle">☰</button>
+  <a href="../" class="topbar-logo">🦀 moleculer<em>-rs</em> <span class="topbar-pill">Docs</span></a>
+  <div class="topbar-search-wrap" id="searchTrigger">
+    <svg class="topbar-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <span class="topbar-search-text">Search docs…</span>
+    <span class="topbar-search-kbd">⌘K</span>
+  </div>
+  <nav class="topbar-right">
+    <a href="../" class="topbar-link">Home</a>
+    <a href="../ecosystem/" class="topbar-link">Ecosystem</a>
+    <a class="topbar-github" href="https://github.com/oneErrortime/mj" target="_blank">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+      </svg>
+      GitHub
+    </a>
+    <a href="../lab/" class="topbar-lab">Open Lab →</a>
+  </nav>
+</header>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-group">
+      <div class="sidebar-group-label">Getting Started</div>
+      <div class="sidebar-item" data-page="introduction"><span class="sidebar-item-icon">🏠</span> Introduction</div>
+      <div class="sidebar-item" data-page="quick-start"><span class="sidebar-item-icon">⚡</span> Quick Start</div>
+    </div>
+
+    <hr class="sidebar-divider" />
+
+    <div class="sidebar-group">
+      <div class="sidebar-group-label">Core</div>
+      <div class="sidebar-item" data-page="broker">
+        <span><span class="sidebar-item-icon">🔀</span> ServiceBroker</span>
+        <span class="sidebar-item-badge badge-done">done</span>
+      </div>
+      <div class="sidebar-item" data-page="middleware">
+        <span><span class="sidebar-item-icon">🔌</span> Middleware</span>
+        <span class="sidebar-item-badge badge-done">done</span>
+      </div>
+    </div>
+
+    <hr class="sidebar-divider" />
+
+    <div class="sidebar-group">
+      <div class="sidebar-group-label">Ecosystem</div>
+      <div class="sidebar-item" data-page="channels">
+        <span><span class="sidebar-item-icon">📬</span> Channels</span>
+        <span class="sidebar-item-badge badge-done">done</span>
+      </div>
+      <div class="sidebar-item" data-page="database">
+        <span><span class="sidebar-item-icon">🗄️</span> Database</span>
+        <span class="sidebar-item-badge badge-js">JS</span>
+      </div>
+      <div class="sidebar-item" data-page="workflows">
+        <span><span class="sidebar-item-icon">⚙️</span> Workflows</span>
+        <span class="sidebar-item-badge badge-js">JS</span>
+      </div>
+    </div>
+
+    <hr class="sidebar-divider" />
+
+    <div class="sidebar-group">
+      <div class="sidebar-group-label">Observability</div>
+      <div class="sidebar-item" data-page="metrics">
+        <span><span class="sidebar-item-icon">📊</span> Metrics &amp; Tracing</span>
+        <span class="sidebar-item-badge badge-done">done</span>
+      </div>
+      <div class="sidebar-item" data-page="laboratory">
+        <span><span class="sidebar-item-icon">🔬</span> Laboratory</span>
+        <span class="sidebar-item-badge badge-done">done</span>
+      </div>
+    </div>
+
+    <hr class="sidebar-divider" />
+
+    <div class="sidebar-group">
+      <div class="sidebar-group-label">Links</div>
+      <a class="sidebar-item" href="https://github.com/oneErrortime/mj" target="_blank">
+        <span><span class="sidebar-item-icon">📦</span> GitHub</span>
+        <span style="font-size:10px;color:var(--text-dim)">↗</span>
+      </a>
+      <a class="sidebar-item" href="https://moleculer.services/docs" target="_blank">
+        <span><span class="sidebar-item-icon">📘</span> Moleculer.js Docs</span>
+        <span style="font-size:10px;color:var(--text-dim)">↗</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+    <div class="content-wrap">
+      <div class="breadcrumb" id="breadcrumb"></div>
+      <div id="content" class="md">
+        <div class="loading">Loading…</div>
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </main>
+
+</div>
+
+<script>
+// ─── Nav structure ──────────────────────────────────────────────────────────
+const NAV = [
+  { page: 'introduction', label: 'Introduction',       section: 'Getting Started', icon: '🏠' },
+  { page: 'quick-start',  label: 'Quick Start',        section: 'Getting Started', icon: '⚡' },
+  { page: 'broker',       label: 'ServiceBroker',      section: 'Core',            icon: '🔀' },
+  { page: 'middleware',   label: 'Middleware',          section: 'Core',            icon: '🔌' },
+  { page: 'channels',     label: 'Channels',           section: 'Ecosystem',       icon: '📬' },
+  { page: 'database',     label: 'Database',           section: 'Ecosystem',       icon: '🗄️' },
+  { page: 'workflows',    label: 'Workflows',          section: 'Ecosystem',       icon: '⚙️' },
+  { page: 'metrics',      label: 'Metrics & Tracing',  section: 'Observability',   icon: '📊' },
+  { page: 'laboratory',   label: 'Laboratory',         section: 'Observability',   icon: '🔬' },
+];
+
+// ─── State ──────────────────────────────────────────────────────────────────
+let currentPage = '';
+const cache = {};
+
+// ─── Router ─────────────────────────────────────────────────────────────────
+function getPage() {
+  const params = new URLSearchParams(location.search);
+  return params.get('name') || 'introduction';
+}
+
+function navigate(page, push = true) {
+  if (page === currentPage) return;
+  currentPage = page;
+  if (push) history.pushState({}, '', `?name=${page}`);
+  loadPage(page);
+  updateSidebar(page);
+  updateBreadcrumb(page);
+  updatePagination(page);
+  closeMobile();
+}
+
+window.addEventListener('popstate', () => navigate(getPage(), false));
+
+// ─── Content loader ──────────────────────────────────────────────────────────
+async function loadPage(page) {
+  const el = document.getElementById('content');
+  if (!el) return;
+
+  if (cache[page]) {
+    el.innerHTML = cache[page];
+    afterRender(el);
+    window.scrollTo(0, 0);
+    return;
+  }
+
+  el.innerHTML = '<div class="loading">Loading…</div>';
+
+  try {
+    const base = getBase();
+    const res = await fetch(`${base}content/${page}.md`);
+    if (!res.ok) throw new Error(res.status);
+    const md = await res.text();
+    const html = renderMarkdown(md);
+    cache[page] = html;
+    el.innerHTML = html;
+    afterRender(el);
+  } catch (e) {
+    el.innerHTML = `<div class="loading" style="color:var(--red)">Failed to load "${page}"</div>`;
+  }
+  window.scrollTo(0, 0);
+}
+
+function getBase() {
+  // Works both on localhost and GitHub Pages
+  const path = location.pathname;
+  if (path.endsWith('/') ) return '';
+  if (path.endsWith('/index.html')) return '';
+  return path.substring(0, path.lastIndexOf('/') + 1);
+}
+
+// ─── Markdown renderer ───────────────────────────────────────────────────────
+function renderMarkdown(md) {
+  marked.setOptions({
+    gfm: true,
+    breaks: false,
+    highlight: null,  // we use our own post-processing
+  });
+
+  // Patch renderer for code blocks
+  const renderer = new marked.Renderer();
+
+  renderer.code = function(code, lang) {
+    const language = (lang || 'plaintext').trim();
+    let highlighted;
+    try {
+      if (language && hljs.getLanguage(language)) {
+        highlighted = hljs.highlight(code, { language }).value;
+      } else {
+        highlighted = hljs.highlightAuto(code).value;
+      }
+    } catch (e) {
+      highlighted = escapeHtml(code);
+    }
+
+    const displayLang = language === 'plaintext' ? '' : language;
+    return `
+      <div class="code-header">
+        <span class="code-lang-tag">${displayLang}</span>
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><code class="hljs language-${language}">${highlighted}</code></pre>
+    `;
+  };
+
+  // Patch links to intercept internal doc links
+  renderer.link = function(href, title, text) {
+    if (href && href.startsWith('/docs?name=')) {
+      const name = href.split('=')[1];
+      return `<a href="#" onclick="navigate('${name}'); return false;" title="${title || ''}">${text}</a>`;
+    }
+    const external = href && (href.startsWith('http') || href.startsWith('//'));
+    const target = external ? ' target="_blank" rel="noopener"' : '';
+    return `<a href="${href || ''}"${title ? ` title="${title}"` : ''}${target}>${text}</a>`;
+  };
+
+  marked.use({ renderer });
+  return marked.parse(md);
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function afterRender(el) {
+  // Internal doc links via query string
+  el.querySelectorAll('a[href]').forEach(a => {
+    const href = a.getAttribute('href');
+    if (href && href.startsWith('/docs?name=')) {
+      const name = href.split('=')[1];
+      a.href = '#';
+      a.addEventListener('click', e => { e.preventDefault(); navigate(name); });
+    }
+  });
+}
+
+// ─── Copy code ──────────────────────────────────────────────────────────────
+window.copyCode = function(btn) {
+  const pre = btn.closest('.code-header').nextElementSibling;
+  const text = pre ? pre.textContent : '';
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1800);
+  });
+};
+
+// ─── Sidebar ─────────────────────────────────────────────────────────────────
+function updateSidebar(page) {
+  document.querySelectorAll('.sidebar-item[data-page]').forEach(el => {
+    el.classList.toggle('active', el.dataset.page === page);
+  });
+}
+
+document.querySelectorAll('.sidebar-item[data-page]').forEach(el => {
+  el.addEventListener('click', () => navigate(el.dataset.page));
+});
+
+// ─── Breadcrumb ──────────────────────────────────────────────────────────────
+function updateBreadcrumb(page) {
+  const info = NAV.find(n => n.page === page);
+  if (!info) return;
+  document.getElementById('breadcrumb').innerHTML =
+    `<a href="../">Home</a>
+     <span class="breadcrumb-sep">/</span>
+     <a href="?" onclick="navigate('introduction'); return false;">Docs</a>
+     <span class="breadcrumb-sep">/</span>
+     <span>${info.label}</span>`;
+}
+
+// ─── Pagination ──────────────────────────────────────────────────────────────
+function updatePagination(page) {
+  const idx = NAV.findIndex(n => n.page === page);
+  const prev = idx > 0 ? NAV[idx - 1] : null;
+  const next = idx < NAV.length - 1 ? NAV[idx + 1] : null;
+
+  let html = '';
+  if (prev) html += `
+    <div class="page-nav" onclick="navigate('${prev.page}')">
+      <div class="page-nav-label">← Previous</div>
+      <div class="page-nav-title">${prev.icon} ${prev.label}</div>
+    </div>`;
+  else html += '<div style="flex:1"></div>';
+
+  if (next) html += `
+    <div class="page-nav page-nav-next" onclick="navigate('${next.page}')">
+      <div class="page-nav-label">Next →</div>
+      <div class="page-nav-title">${next.icon} ${next.label}</div>
+    </div>`;
+
+  document.getElementById('pagination').innerHTML = html;
+}
+
+// ─── Mobile sidebar ──────────────────────────────────────────────────────────
+document.getElementById('mobileToggle').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('open');
+});
+
+function closeMobile() {
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+// ─── Search ──────────────────────────────────────────────────────────────────
+const searchOverlay = document.getElementById('searchOverlay');
+const searchInput   = document.getElementById('searchInput');
+const searchResults = document.getElementById('searchResults');
+let focusedIdx = -1;
+
+function openSearch() {
+  searchOverlay.classList.add('open');
+  searchInput.value = '';
+  renderSearchResults('');
+  searchInput.focus();
+  focusedIdx = -1;
+}
+
+function closeSearch() {
+  searchOverlay.classList.remove('open');
+}
+
+document.getElementById('searchTrigger').addEventListener('click', openSearch);
+searchOverlay.addEventListener('click', e => { if (e.target === searchOverlay) closeSearch(); });
+
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
+  if (e.key === 'Escape' && searchOverlay.classList.contains('open')) closeSearch();
+
+  if (searchOverlay.classList.contains('open')) {
+    const items = searchResults.querySelectorAll('.search-result');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusedIdx = Math.min(focusedIdx + 1, items.length - 1);
+      updateFocus(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusedIdx = Math.max(focusedIdx - 1, 0);
+      updateFocus(items);
+    } else if (e.key === 'Enter') {
+      if (focusedIdx >= 0 && items[focusedIdx]) items[focusedIdx].click();
+    }
+  }
+});
+
+function updateFocus(items) {
+  items.forEach((el, i) => el.classList.toggle('focused', i === focusedIdx));
+  if (items[focusedIdx]) items[focusedIdx].scrollIntoView({ block: 'nearest' });
+}
+
+searchInput.addEventListener('input', () => {
+  focusedIdx = -1;
+  renderSearchResults(searchInput.value);
+});
+
+function renderSearchResults(query) {
+  const q = query.toLowerCase().trim();
+  const filtered = q
+    ? NAV.filter(n =>
+        n.label.toLowerCase().includes(q) ||
+        n.section.toLowerCase().includes(q) ||
+        n.page.toLowerCase().includes(q))
+    : NAV;
+
+  if (!filtered.length) {
+    searchResults.innerHTML = `<div class="search-empty">No results for "${query}"</div>`;
+    return;
+  }
+
+  searchResults.innerHTML = filtered.map(n => `
+    <div class="search-result" data-page="${n.page}">
+      <span class="search-result-icon">${n.icon}</span>
+      <div class="search-result-info">
+        <div class="search-result-title">${n.label}</div>
+        <div class="search-result-sub">${n.section}</div>
+      </div>
+      <span class="search-result-arrow">↵</span>
+    </div>
+  `).join('');
+
+  searchResults.querySelectorAll('.search-result').forEach(el => {
+    el.addEventListener('click', () => {
+      navigate(el.dataset.page);
+      closeSearch();
+    });
+  });
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+navigate(getPage(), false);
+</script>
+</body>
+</html>
