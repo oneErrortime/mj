@@ -209,4 +209,69 @@ impl ServiceRegistry {
             for ep in eps.iter_mut() { ep.available = available; }
         }
     }
+
+    // ─── Transit helpers ──────────────────────────────────────────────────
+
+    /// Register (or update) a remote node's service list received via INFO packet.
+    pub fn register_remote_node(&self, node_id: String, services: serde_json::Value) {
+        // Update / insert the NodeInfo entry
+        let info = NodeInfo {
+            node_id: node_id.clone(),
+            ip_list: vec![],
+            hostname: String::new(),
+            client: node::ClientInfo { lang_type: "unknown".into(), version: "0".into(), lang_version: "0".into() },
+            seq: 0,
+            instance_id: String::new(),
+            metadata: serde_json::Value::Null,
+            available: true,
+            last_heartbeat: chrono::Utc::now(),
+            cpu: 0.0,
+        };
+        self.nodes.insert(node_id.clone(), info);
+
+        // Register remote action endpoints from the services list
+        if let Some(arr) = services.as_array() {
+            for svc in arr {
+                let svc_name = svc.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                if let Some(actions) = svc.get("actions").and_then(|v| v.as_object()) {
+                    for action_name in actions.keys() {
+                        let full_key = format!("{}.{}", svc_name, action_name);
+                        // Create a stub remote endpoint — real handler is never called locally
+                        let stub_action = ActionDef::new(&full_key, |_ctx| {
+                            Box::pin(async { Err(crate::error::MoleculerError::Internal("remote stub".into())) })
+                        });
+                        let ep = ActionEndpoint {
+                            service_name: svc_name.clone(),
+                            action_name: full_key.clone(),
+                            node_id: node_id.clone(),
+                            is_local: false,
+                            action: stub_action,
+                            available: true,
+                        };
+                        self.actions.entry(full_key).or_default().push(ep);
+                    }
+                }
+            }
+        }
+    }
+
+    /// Remove all endpoints registered for a remote node (on DISCONNECT).
+    pub fn unregister_node(&self, node_id: &str) {
+        self.nodes.remove(node_id);
+        // Remove remote endpoints for this node
+        for mut entry in self.actions.iter_mut() {
+            entry.value_mut().retain(|ep| ep.node_id != node_id);
+        }
+        for mut entry in self.events.iter_mut() {
+            entry.value_mut().retain(|ep| ep.node_id != node_id);
+        }
+    }
+
+    /// Update the heartbeat timestamp for a remote node.
+    pub fn heartbeat_received(&self, node_id: &str) {
+        if let Some(mut node) = self.nodes.get_mut(node_id) {
+            node.last_heartbeat = chrono::Utc::now();
+            node.available = true;
+        }
+    }
 }
