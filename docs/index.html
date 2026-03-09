@@ -385,6 +385,7 @@
     <a href="#features" class="nav-hide">Features</a>
     <a href="#architecture" class="nav-hide">Architecture</a>
     <a href="#channels" class="nav-hide">Channels</a>
+    <a href="ecosystem/" class="nav-hide">Ecosystem</a>
     <a href="https://github.com/oneErrortime/mj" target="_blank" class="nav-hide">GitHub</a>
     <a href="lab/" class="btn-cta nav-cta">Open Lab →</a>
   </div>
@@ -709,6 +710,40 @@
   </div>
 </section>
 
+<!-- ECOSYSTEM -->
+<section id="ecosystem" style="padding-top:0">
+  <div class="section-tag">// ecosystem</div>
+  <h2>The full JS ecosystem</h2>
+  <p class="section-desc">Channels, database, and workflows — the complete Moleculer.js ecosystem is bundled in this repo for reference and future Rust ports.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
+    <a href="ecosystem/" style="text-decoration:none">
+      <div class="feature-card" style="cursor:pointer;border-color:rgba(249,115,22,.2);height:100%">
+        <span class="feature-icon">📬</span>
+        <h3>@moleculer/channels</h3>
+        <p>Durable, reliable messaging with Redis, RabbitMQ, NATS, and Kafka. ACK/NACK, consumer groups, DLQ. Rust in-memory port: ✓ done.</p>
+        <span class="feature-status" style="margin-top:12px">View ecosystem →</span>
+      </div>
+    </a>
+    <a href="ecosystem/" style="text-decoration:none">
+      <div class="feature-card" style="cursor:pointer;border-color:rgba(34,211,238,.2);height:100%">
+        <span class="feature-icon">🗄️</span>
+        <h3>@moleculer/database</h3>
+        <p>Advanced DB mixin: auto CRUD actions, pagination, validation, populate, soft delete, multi-tenancy. NeDB, MongoDB, Knex adapters.</p>
+        <span class="feature-status" style="background:rgba(34,211,238,.1);color:var(--cyan);border-color:rgba(34,211,238,.2);margin-top:12px">Rust port planned</span>
+      </div>
+    </a>
+    <a href="ecosystem/" style="text-decoration:none">
+      <div class="feature-card" style="cursor:pointer;border-color:rgba(192,132,252,.2);height:100%">
+        <span class="feature-icon">⚙️</span>
+        <h3>@moleculer/workflows</h3>
+        <p>Temporal-style durable workflows for Moleculer. Retry policies, signals, concurrency, timeouts, history. Redis-backed persistence.</p>
+        <span class="feature-status" style="background:rgba(192,132,252,.1);color:#c084fc;border-color:rgba(192,132,252,.2);margin-top:12px">Rust port planned</span>
+      </div>
+    </a>
+  </div>
+</section>
+
 <!-- LAB CTA -->
 <section>
   <div class="lab-cta">
@@ -729,6 +764,7 @@
   <div class="links">
     <a href="https://github.com/oneErrortime/mj" target="_blank">GitHub</a>
     <a href="lab/">Laboratory</a>
+    <a href="ecosystem/">Ecosystem</a>
     <a href="https://moleculer.services" target="_blank">Moleculer.js</a>
     <a href="https://lab.moleculer.services" target="_blank">Original Lab</a>
   </div>
