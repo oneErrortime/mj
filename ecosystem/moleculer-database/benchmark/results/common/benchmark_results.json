@@ -1,0 +1,1201 @@
+{
+  "name": "Moleculer Database benchmark - Common",
+  "description": "This is a common benchmark which create, list, get, update, replace and delete entities via service actions.",
+  "meta": {
+    "type": "common",
+    "adapters": [
+      {
+        "name": "NeDB (memory)",
+        "type": "NeDB"
+      },
+      {
+        "name": "NeDB (file)",
+        "type": "NeDB",
+        "options": "/home/runner/work/database/database/benchmark/suites/tmp/common.db"
+      },
+      {
+        "name": "MongoDB",
+        "ref": true,
+        "type": "MongoDB",
+        "options": {
+          "dbName": "bench_test",
+          "collection": "users"
+        }
+      },
+      {
+        "name": "Knex SQLite (memory)",
+        "type": "Knex",
+        "options": {
+          "knex": {
+            "client": "sqlite3",
+            "connection": {
+              "filename": ":memory:"
+            },
+            "useNullAsDefault": true,
+            "log": {}
+          }
+        }
+      },
+      {
+        "name": "Knex SQLite (file)",
+        "type": "Knex",
+        "options": {
+          "knex": {
+            "client": "sqlite3",
+            "connection": {
+              "filename": "/home/runner/work/database/database/benchmark/suites/tmp/common.sqlite3"
+            },
+            "useNullAsDefault": true,
+            "pool": {
+              "min": 1,
+              "max": 1
+            },
+            "log": {}
+          }
+        }
+      },
+      {
+        "name": "Knex-Postgresql",
+        "type": "Knex",
+        "options": {
+          "knex": {
+            "client": "pg",
+            "connection": {
+              "host": "127.0.0.1",
+              "port": 5432,
+              "user": "postgres",
+              "password": "moleculer",
+              "database": "bench_test"
+            }
+          }
+        }
+      },
+      {
+        "name": "Knex-MySQL",
+        "type": "Knex",
+        "options": {
+          "knex": {
+            "client": "mysql",
+            "connection": {
+              "host": "127.0.0.1",
+              "user": "root",
+              "password": "moleculer",
+              "database": "bench_test"
+            },
+            "log": {}
+          }
+        }
+      },
+      {
+        "name": "Knex-MySQL2",
+        "type": "Knex",
+        "options": {
+          "knex": {
+            "client": "mysql2",
+            "connection": {
+              "host": "127.0.0.1",
+              "user": "root",
+              "password": "moleculer",
+              "database": "bench_test"
+            },
+            "log": {}
+          }
+        }
+      },
+      {
+        "name": "Knex-MSSQL",
+        "type": "Knex",
+        "options": {
+          "knex": {
+            "client": "mssql",
+            "connection": {
+              "host": "127.0.0.1",
+              "port": 1433,
+              "user": "sa",
+              "password": "Moleculer@Pass1234",
+              "database": "bench_test",
+              "encrypt": false
+            }
+          }
+        }
+      }
+    ],
+    "count": 1000
+  },
+  "suites": [
+    {
+      "name": "Entity creation",
+      "description": "This test calls the `create` action to create an entity.",
+      "meta": {
+        "type": "create"
+      },
+      "tests": [
+        {
+          "name": "NeDB (memory)",
+          "meta": {},
+          "fastest": true,
+          "stat": {
+            "duration": 5.005109394,
+            "cycle": 0,
+            "count": 68000,
+            "avg": 0.0000736045499117647,
+            "rps": 13586.116635435921,
+            "percent": 728.6751674365325
+          }
+        },
+        {
+          "name": "NeDB (file)",
+          "meta": {},
+          "stat": {
+            "duration": 5.053904082,
+            "cycle": 0,
+            "count": 22000,
+            "avg": 0.00022972291281818182,
+            "rps": 4353.0703478040405,
+            "percent": 165.51231644227494
+          }
+        },
+        {
+          "name": "MongoDB",
+          "meta": {},
+          "reference": true,
+          "stat": {
+            "duration": 5.489483645,
+            "cycle": 0,
+            "count": 9000,
+            "avg": 0.0006099426272222222,
+            "rps": 1639.4984632475391,
+            "percent": 0
+          }
+        },
+        {
+          "name": "Knex SQLite (memory)",
+          "meta": {},
+          "stat": {
+            "duration": 5.245866108,
+            "cycle": 0,
+            "count": 11000,
+            "avg": 0.00047689691890909095,
+            "rps": 2096.8892025713135,
+            "percent": 27.89821092102575
+          }
+        },
+        {
+          "name": "Knex SQLite (file)",
+          "meta": {},
+          "stat": {
+            "duration": 6.403818185,
+            "cycle": 0,
+            "count": 3000,
+            "avg": 0.002134606061666667,
+            "rps": 468.4705145169576,
+            "percent": -71.42598635993807
+          }
+        },
+        {
+          "name": "Knex-Postgresql",
+          "meta": {},
+          "stat": {
+            "duration": 6.25507749,
+            "cycle": 0,
+            "count": 4000,
+            "avg": 0.0015637693724999998,
+            "rps": 639.4804870754687,
+            "percent": -60.995359165584226
+          }
+        },
+        {
+          "name": "Knex-MySQL",
+          "meta": {},
+          "stat": {
+            "duration": 6.789012742,
+            "cycle": 0,
+            "count": 3000,
+            "avg": 0.0022630042473333334,
+            "rps": 441.8904653751201,
+            "percent": -73.04721686046489
+          }
+        },
+        {
+          "name": "Knex-MySQL2",
+          "meta": {},
+          "stat": {
+            "duration": 6.500961968,
+            "cycle": 0,
+            "count": 3000,
+            "avg": 0.002166987322666667,
+            "rps": 461.4701662257132,
+            "percent": -71.85296744276128
+          }
+        },
+        {
+          "name": "Knex-MSSQL",
+          "meta": {},
+          "stat": {
+            "duration": 7.068448819,
+            "cycle": 0,
+            "count": 2000,
+            "avg": 0.0035342244095,
+            "rps": 282.94751100467715,
+            "percent": -82.74182517718185
+          }
+        }
+      ]
+    },
+    {
+      "name": "Entity finding",
+      "description": "This test calls the `find` action to get random 20 entities.",
+      "meta": {
+        "type": "find"
+      },
+      "tests": [
+        {
+          "name": "NeDB (memory)",
+          "meta": {},
+          "stat": {
+            "duration": 5.2345052,
+            "cycle": 0,
+            "count": 18000,
+            "avg": 0.00029080584444444443,
+            "rps": 3438.720435314497,
+            "percent": 248.57639011228798
+          }
+        },
+        {
+          "name": "NeDB (file)",
+          "meta": {},
+          "fastest": true,
+          "stat": {
+            "duration": 5.156045234,
+            "cycle": 0,
+            "count": 18000,
+            "avg": 0.0002864469574444444,
+            "rps": 3491.04772807352,
+            "percent": 253.88070581849365
+          }
+        },
+        {
+          "name": "MongoDB",
+          "meta": {},
+          "reference": true,
+          "stat": {
+            "duration": 5.068402574,
+            "cycle": 0,
+            "count": 5000,
+            "avg": 0.0010136805148,
+            "rps": 986.5041158429495,
+            "percent": 0
+          }
+        },
+        {
+          "name": "Knex SQLite (memory)",
+          "meta": {},
+          "stat": {
+            "duration": 5.361851781,
+            "cycle": 0,
+            "count": 13000,
+            "avg": 0.000412450137,
+            "rps": 2424.5355020939173,
+            "percent": 145.77043959134386
+          }
+        },
+        {
+          "name": "Knex SQLite (file)",
+          "meta": {},
+          "stat": {
+            "duration": 5.264567975,
+            "cycle": 0,
+            "count": 13000,
+            "avg": 0.0004049667673076923,
+            "rps": 2469.3384265781087,
+            "percent": 150.31202474691193
+          }
+        },
+        {
+          "name": "Knex-Postgresql",
+          "meta": {},
+          "stat": {
+            "duration": 5.02522303,
+            "cycle": 0,
+            "count": 7000,
+            "avg": 0.0007178890042857143,
+            "rps": 1392.9730000461293,
+            "percent": 41.202958778926075
+          }
+        },
+        {
+          "name": "Knex-MySQL",
+          "meta": {},
+          "stat": {
+            "duration": 5.9396195259999995,
+            "cycle": 0,
+            "count": 6000,
+            "avg": 0.0009899365876666665,
+            "rps": 1010.1657141060454,
+            "percent": 2.3985301108325814
+          }
+        },
+        {
+          "name": "Knex-MySQL2",
+          "meta": {},
+          "stat": {
+            "duration": 5.48678937,
+            "cycle": 0,
+            "count": 6000,
+            "avg": 0.000914464895,
+            "rps": 1093.5356900715144,
+            "percent": 10.849582126386608
+          }
+        },
+        {
+          "name": "Knex-MSSQL",
+          "meta": {},
+          "stat": {
+            "duration": 5.318539307,
+            "cycle": 0,
+            "count": 4000,
+            "avg": 0.00132963482675,
+            "rps": 752.0861968126092,
+            "percent": -23.762487684102013
+          }
+        }
+      ]
+    },
+    {
+      "name": "Entity listing",
+      "description": "This test calls the `users.list` service action to random 20 entities.",
+      "meta": {
+        "type": "list"
+      },
+      "tests": [
+        {
+          "name": "NeDB (memory)",
+          "meta": {},
+          "stat": {
+            "duration": 6.189823613,
+            "cycle": 0,
+            "count": 4000,
+            "avg": 0.0015474559032499998,
+            "rps": 646.2219685225141,
+            "percent": 30.07140186930991
+          }
+        },
+        {
+          "name": "NeDB (file)",
+          "meta": {},
+          "stat": {
+            "duration": 6.383980359,
+            "cycle": 0,
+            "count": 4000,
+            "avg": 0.00159599508975,
+            "rps": 626.5683437388533,
+            "percent": 26.115525015929435
+          }
+        },
+        {
+          "name": "MongoDB",
+          "meta": {},
+          "reference": true,
+          "stat": {
+            "duration": 6.03839276,
+            "cycle": 0,
+            "count": 3000,
+            "avg": 0.0020127975866666664,
+            "rps": 496.8209454464171,
+            "percent": 0
+          }
+        },
+        {
+          "name": "Knex SQLite (memory)",
+          "meta": {},
+          "stat": {
+            "duration": 5.234100442,
+            "cycle": 0,
+            "count": 9000,
+            "avg": 0.0005815667157777778,
+            "rps": 1719.4931774295515,
+            "percent": 246.09917178199993
+          }
+        },
+        {
+          "name": "Knex SQLite (file)",
+          "meta": {},
+          "fastest": true,
+          "stat": {
+            "duration": 5.150112506,
+            "cycle": 0,
+            "count": 9000,
+            "avg": 0.0005722347228888889,
+            "rps": 1747.534639197647,
+            "percent": 251.7433504393428
+          }
+        },
+        {
+          "name": "Knex-Postgresql",
+          "meta": {},
+          "stat": {
+            "duration": 5.885584847,
+            "cycle": 0,
+            "count": 5000,
+            "avg": 0.0011771169694,
+            "rps": 849.5332460543152,
+            "percent": 70.99384674512251
+          }
+        },
+        {
+          "name": "Knex-MySQL",
+          "meta": {},
+          "stat": {
+            "duration": 6.774863083,
+            "cycle": 0,
+            "count": 3000,
+            "avg": 0.0022582876943333333,
+            "rps": 442.8133769268087,
+            "percent": -10.870630357800252
+          }
+        },
+        {
+          "name": "Knex-MySQL2",
+          "meta": {},
+          "stat": {
+            "duration": 5.7686968709999995,
+            "cycle": 0,
+            "count": 3000,
+            "avg": 0.0019228989569999998,
+            "rps": 520.0481264809382,
+            "percent": 4.675161393135369
+          }
+        },
+        {
+          "name": "Knex-MSSQL",
+          "meta": {},
+          "stat": {
+            "duration": 6.158309137,
+            "cycle": 0,
+            "count": 3000,
+            "avg": 0.0020527697123333332,
+            "rps": 487.146704275622,
+            "percent": -1.9472289281407598
+          }
+        }
+      ]
+    },
+    {
+      "name": "Entity counting",
+      "description": "This test calls the `users.count` service action to get the number of entities.",
+      "meta": {
+        "type": "count"
+      },
+      "tests": [
+        {
+          "name": "NeDB (memory)",
+          "meta": {},
+          "stat": {
+            "duration": 6.01540264,
+            "cycle": 0,
+            "count": 5000,
+            "avg": 0.0012030805279999999,
+            "rps": 831.1995554133015,
+            "percent": -13.769263681408361
+          }
+        },
+        {
+          "name": "NeDB (file)",
+          "meta": {},
+          "stat": {
+            "duration": 6.166912288,
+            "cycle": 0,
+            "count": 5000,
+            "avg": 0.0012333824575999999,
+            "rps": 810.7785171080417,
+            "percent": -15.887793651719917
+          }
+        },
+        {
+          "name": "MongoDB",
+          "meta": {},
+          "reference": true,
+          "stat": {
+            "duration": 5.187125989,
+            "cycle": 0,
+            "count": 5000,
+            "avg": 0.0010374251978,
+            "rps": 963.9249192333431,
+            "percent": 0
+          }
+        },
+        {
+          "name": "Knex SQLite (memory)",
+          "meta": {},
+          "fastest": true,
+          "stat": {
+            "duration": 5.008125579,
+            "cycle": 0,
+            "count": 35000,
+            "avg": 0.00014308930225714284,
+            "rps": 6988.642646414758,
+            "percent": 625.0193979810346
+          }
+        },
+        {
+          "name": "Knex SQLite (file)",
+          "meta": {},
+          "stat": {
+            "duration": 5.007592605,
+            "cycle": 0,
+            "count": 33000,
+            "avg": 0.00015174523045454545,
+            "rps": 6589.992957304481,
+            "percent": 583.6624747232208
+          }
+        },
+        {
+          "name": "Knex-Postgresql",
+          "meta": {},
+          "stat": {
+            "duration": 5.282815764,
+            "cycle": 0,
+            "count": 12000,
+            "avg": 0.00044023464700000003,
+            "rps": 2271.5158991109574,
+            "percent": 135.652783094103
+          }
+        },
+        {
+          "name": "Knex-MySQL",
+          "meta": {},
+          "stat": {
+            "duration": 5.487668905,
+            "cycle": 0,
+            "count": 5000,
+            "avg": 0.0010975337809999998,
+            "rps": 911.1336865539267,
+            "percent": -5.476695500454937
+          }
+        },
+        {
+          "name": "Knex-MySQL2",
+          "meta": {},
+          "stat": {
+            "duration": 5.435340624,
+            "cycle": 0,
+            "count": 5000,
+            "avg": 0.0010870681248,
+            "rps": 919.9055488670326,
+            "percent": -4.56668040093011
+          }
+        },
+        {
+          "name": "Knex-MSSQL",
+          "meta": {},
+          "stat": {
+            "duration": 5.132370317,
+            "cycle": 0,
+            "count": 6000,
+            "avg": 0.0008553950528333334,
+            "rps": 1169.0504833850632,
+            "percent": 21.280242896393474
+          }
+        }
+      ]
+    },
+    {
+      "name": "Entity getting",
+      "description": "This test calls the `users.get` service action to get a random entity.",
+      "meta": {
+        "type": "get"
+      },
+      "tests": [
+        {
+          "name": "NeDB (memory)",
+          "meta": {},
+          "fastest": true,
+          "stat": {
+            "duration": 5.037886853,
+            "cycle": 0,
+            "count": 132000,
+            "avg": 0.00003816580949242424,
+            "rps": 26201.46181357678,
+            "percent": 1551.6712215946227
+          }
+        },
+        {
+          "name": "NeDB (file)",
+          "meta": {},
+          "stat": {
+            "duration": 5.011553088,
+            "cycle": 0,
+            "count": 126000,
+            "avg": 0.00003977423085714286,
+            "rps": 25141.906667955463,
+            "percent": 1484.8796527055765
+          }
+        },
+        {
+          "name": "MongoDB",
+          "meta": {},
+          "reference": true,
+          "stat": {
+            "duration": 5.042989535,
+            "cycle": 0,
+            "count": 8000,
+            "avg": 0.000630373691875,
+            "rps": 1586.3606189299776,
+            "percent": 0
+          }
+        },
+        {
+          "name": "Knex SQLite (memory)",
+          "meta": {},
+          "stat": {
+            "duration": 5.121170629,
+            "cycle": 0,
+            "count": 23000,
+            "avg": 0.00022265959256521738,
+            "rps": 4491.160647871473,
+            "percent": 183.11095184024578
+          }
+        },
+        {
+          "name": "Knex SQLite (file)",
+          "meta": {},
+          "stat": {
+            "duration": 5.01549158,
+            "cycle": 0,
+            "count": 23000,
+            "avg": 0.00021806485130434783,
+            "rps": 4585.79176799256,
+            "percent": 189.07624869594537
+          }
+        },
+        {
+          "name": "Knex-Postgresql",
+          "meta": {},
+          "stat": {
+            "duration": 5.31543743,
+            "cycle": 0,
+            "count": 10000,
+            "avg": 0.0005315437430000001,
+            "rps": 1881.3127107019675,
+            "percent": 18.593003901656303
+          }
+        },
+        {
+          "name": "Knex-MySQL",
+          "meta": {},
+          "stat": {
+            "duration": 5.03647866,
+            "cycle": 0,
+            "count": 9000,
+            "avg": 0.00055960874,
+            "rps": 1786.9627983294185,
+            "percent": 12.645433642619679
+          }
+        },
+        {
+          "name": "Knex-MySQL2",
+          "meta": {},
+          "stat": {
+            "duration": 5.189847991,
+            "cycle": 0,
+            "count": 10000,
+            "avg": 0.0005189847990999999,
+            "rps": 1926.838708444168,
+            "percent": 21.462843028960705
+          }
+        },
+        {
+          "name": "Knex-MSSQL",
+          "meta": {},
+          "stat": {
+            "duration": 5.036707945,
+            "cycle": 0,
+            "count": 6000,
+            "avg": 0.0008394513241666667,
+            "rps": 1191.2543005310188,
+            "percent": -24.9064628612291
+          }
+        }
+      ]
+    },
+    {
+      "name": "Entity resolving",
+      "description": "This test calls the `users.resolve` service action to resolve a random entity.",
+      "meta": {
+        "type": "resolve"
+      },
+      "tests": [
+        {
+          "name": "NeDB (memory)",
+          "meta": {},
+          "fastest": true,
+          "stat": {
+            "duration": 5.024427375,
+            "cycle": 0,
+            "count": 130000,
+            "avg": 0.000038649441346153846,
+            "rps": 25873.59519750248,
+            "percent": 1534.534230953035
+          }
+        },
+        {
+          "name": "NeDB (file)",
+          "meta": {},
+          "stat": {
+            "duration": 5.032955342,
+            "cycle": 0,
+            "count": 129000,
+            "avg": 0.00003901515768992248,
+            "rps": 25631.06390463975,
+            "percent": 1519.2125991026724
+          }
+        },
+        {
+          "name": "MongoDB",
+          "meta": {},
+          "reference": true,
+          "stat": {
+            "duration": 5.053906791,
+            "cycle": 0,
+            "count": 8000,
+            "avg": 0.000631738348875,
+            "rps": 1582.93382344257,
+            "percent": 0
+          }
+        },
+        {
+          "name": "Knex SQLite (memory)",
+          "meta": {},
+          "stat": {
+            "duration": 5.020212103,
+            "cycle": 0,
+            "count": 25000,
+            "avg": 0.00020080848412000002,
+            "rps": 4979.869273862033,
+            "percent": 214.59743926829458
+          }
+        },
+        {
+          "name": "Knex SQLite (file)",
+          "meta": {},
+          "stat": {
+            "duration": 5.041557379,
+            "cycle": 0,
+            "count": 24000,
+            "avg": 0.00021006489079166668,
+            "rps": 4760.433769923776,
+            "percent": 200.7348569740438
+          }
+        },
+        {
+          "name": "Knex-Postgresql",
+          "meta": {},
+          "stat": {
+            "duration": 5.151100336,
+            "cycle": 0,
+            "count": 9000,
+            "avg": 0.0005723444817777777,
+            "rps": 1747.1995132963764,
+            "percent": 10.37729356850565
+          }
+        },
+        {
+          "name": "Knex-MySQL",
+          "meta": {},
+          "stat": {
+            "duration": 5.021246826,
+            "cycle": 0,
+            "count": 8000,
+            "avg": 0.0006276558532499999,
+            "rps": 1593.2297847968807,
+            "percent": 0.6504353626053216
+          }
+        },
+        {
+          "name": "Knex-MySQL2",
+          "meta": {},
+          "stat": {
+            "duration": 5.063326954,
+            "cycle": 0,
+            "count": 10000,
+            "avg": 0.0005063326954,
+            "rps": 1974.98603010419,
+            "percent": 24.76744137092122
+          }
+        },
+        {
+          "name": "Knex-MSSQL",
+          "meta": {},
+          "stat": {
+            "duration": 5.374213222,
+            "cycle": 0,
+            "count": 6000,
+            "avg": 0.0008957022036666666,
+            "rps": 1116.442491607565,
+            "percent": -29.470046373794574
+          }
+        }
+      ]
+    },
+    {
+      "name": "Entity updating",
+      "description": "This test calls the `users.update` service action to update a entity.",
+      "meta": {
+        "type": "update"
+      },
+      "tests": [
+        {
+          "name": "NeDB (memory)",
+          "meta": {},
+          "fastest": true,
+          "stat": {
+            "duration": 5.001337595,
+            "cycle": 0,
+            "count": 34000,
+            "avg": 0.00014709816455882354,
+            "rps": 6798.181357321471,
+            "percent": 750.8272679700999
+          }
+        },
+        {
+          "name": "NeDB (file)",
+          "meta": {},
+          "stat": {
+            "duration": 5.22876583,
+            "cycle": 0,
+            "count": 16000,
+            "avg": 0.00032679786437500005,
+            "rps": 3059.9955171448173,
+            "percent": 282.9741351411792
+          }
+        },
+        {
+          "name": "MongoDB",
+          "meta": {},
+          "reference": true,
+          "stat": {
+            "duration": 5.006205179,
+            "cycle": 0,
+            "count": 4000,
+            "avg": 0.00125155129475,
+            "rps": 799.0084019686561,
+            "percent": 0
+          }
+        },
+        {
+          "name": "Knex SQLite (memory)",
+          "meta": {},
+          "stat": {
+            "duration": 5.495019738,
+            "cycle": 0,
+            "count": 9000,
+            "avg": 0.0006105577486666666,
+            "rps": 1637.8467101331457,
+            "percent": 104.98491706691664
+          }
+        },
+        {
+          "name": "Knex SQLite (file)",
+          "meta": {},
+          "stat": {
+            "duration": 6.411416313,
+            "cycle": 0,
+            "count": 4000,
+            "avg": 0.0016028540782500001,
+            "rps": 623.8871108540351,
+            "percent": -21.917327863279567
+          }
+        },
+        {
+          "name": "Knex-Postgresql",
+          "meta": {},
+          "stat": {
+            "duration": 5.76514606,
+            "cycle": 0,
+            "count": 3000,
+            "avg": 0.0019217153533333333,
+            "rps": 520.3684293126131,
+            "percent": -34.873221854677524
+          }
+        },
+        {
+          "name": "Knex-MySQL",
+          "meta": {},
+          "stat": {
+            "duration": 5.015247708,
+            "cycle": 0,
+            "count": 2000,
+            "avg": 0.002507623854,
+            "rps": 398.783891932143,
+            "percent": -50.09015037268824
+          }
+        },
+        {
+          "name": "Knex-MySQL2",
+          "meta": {},
+          "stat": {
+            "duration": 6.663248483,
+            "cycle": 0,
+            "count": 3000,
+            "avg": 0.0022210828276666666,
+            "rps": 450.23084575848014,
+            "percent": -43.65130020545867
+          }
+        },
+        {
+          "name": "Knex-MSSQL",
+          "meta": {},
+          "stat": {
+            "duration": 6.989239647,
+            "cycle": 0,
+            "count": 2000,
+            "avg": 0.0034946198235,
+            "rps": 286.1541599676672,
+            "percent": -64.18633905943675
+          }
+        }
+      ]
+    },
+    {
+      "name": "Entity replacing",
+      "description": "This test calls the `users.replace` service action to replace a random entity.",
+      "meta": {
+        "type": "replace"
+      },
+      "tests": [
+        {
+          "name": "NeDB (memory)",
+          "meta": {},
+          "fastest": true,
+          "stat": {
+            "duration": 5.046900384,
+            "cycle": 0,
+            "count": 40000,
+            "avg": 0.0001261725096,
+            "rps": 7925.656731171178,
+            "percent": 901.6809876071452
+          }
+        },
+        {
+          "name": "NeDB (file)",
+          "meta": {},
+          "stat": {
+            "duration": 5.274768061,
+            "cycle": 0,
+            "count": 17000,
+            "avg": 0.00031028047417647057,
+            "rps": 3222.8905239820365,
+            "percent": 307.32374268939446
+          }
+        },
+        {
+          "name": "MongoDB",
+          "meta": {},
+          "reference": true,
+          "stat": {
+            "duration": 5.055384161,
+            "cycle": 0,
+            "count": 4000,
+            "avg": 0.00126384604025,
+            "rps": 791.2356158525378,
+            "percent": 0
+          }
+        },
+        {
+          "name": "Knex SQLite (memory)",
+          "meta": {},
+          "stat": {
+            "duration": 5.452124171,
+            "cycle": 0,
+            "count": 9000,
+            "avg": 0.0006057915745555556,
+            "rps": 1650.732763547692,
+            "percent": 108.62720667206901
+          }
+        },
+        {
+          "name": "Knex SQLite (file)",
+          "meta": {},
+          "stat": {
+            "duration": 6.500417516,
+            "cycle": 0,
+            "count": 4000,
+            "avg": 0.0016251043789999998,
+            "rps": 615.3450897814607,
+            "percent": -22.229854489242
+          }
+        },
+        {
+          "name": "Knex-Postgresql",
+          "meta": {},
+          "stat": {
+            "duration": 5.963020196,
+            "cycle": 0,
+            "count": 3000,
+            "avg": 0.0019876733986666666,
+            "rps": 503.1007612572573,
+            "percent": -36.41580950382547
+          }
+        },
+        {
+          "name": "Knex-MySQL",
+          "meta": {},
+          "stat": {
+            "duration": 7.152307224,
+            "cycle": 0,
+            "count": 3000,
+            "avg": 0.002384102408,
+            "rps": 419.4450694082768,
+            "percent": -46.9886009925963
+          }
+        },
+        {
+          "name": "Knex-MySQL2",
+          "meta": {},
+          "stat": {
+            "duration": 6.408190006,
+            "cycle": 0,
+            "count": 3000,
+            "avg": 0.0021360633353333333,
+            "rps": 468.1509126900255,
+            "percent": -40.83293227572877
+          }
+        },
+        {
+          "name": "Knex-MSSQL",
+          "meta": {},
+          "stat": {
+            "duration": 7.988521852,
+            "cycle": 0,
+            "count": 2000,
+            "avg": 0.003994260926,
+            "rps": 250.35920750461258,
+            "percent": -68.35845069551672
+          }
+        }
+      ]
+    },
+    {
+      "name": "Entity deleting",
+      "description": "This test calls the `users.remove` service action to delete a random entity.",
+      "meta": {
+        "type": "remove"
+      },
+      "tests": [
+        {
+          "name": "NeDB (memory)",
+          "meta": {},
+          "fastest": true,
+          "stat": {
+            "duration": 22.788906889,
+            "cycle": 0,
+            "count": 166573,
+            "avg": 0.00013681032873875119,
+            "rps": 7309.38964344987,
+            "percent": 148.37890051899453
+          }
+        },
+        {
+          "name": "NeDB (file)",
+          "meta": {},
+          "stat": {
+            "duration": 18.106281091,
+            "cycle": 0,
+            "count": 82576,
+            "avg": 0.00021926808141590776,
+            "rps": 4560.627308555684,
+            "percent": 54.97376003084747
+          }
+        },
+        {
+          "name": "MongoDB",
+          "meta": {},
+          "reference": true,
+          "stat": {
+            "duration": 9.721566795,
+            "cycle": 0,
+            "count": 28609,
+            "avg": 0.00033980799031773214,
+            "rps": 2942.8383925432877,
+            "percent": 0
+          }
+        },
+        {
+          "name": "Knex SQLite (memory)",
+          "meta": {},
+          "stat": {
+            "duration": 6.051547375,
+            "cycle": 0,
+            "count": 10663,
+            "avg": 0.0005675276540373253,
+            "rps": 1762.0286745255794,
+            "percent": -40.12485772272455
+          }
+        },
+        {
+          "name": "Knex SQLite (file)",
+          "meta": {},
+          "stat": {
+            "duration": 26.75216272,
+            "cycle": 0,
+            "count": 24737,
+            "avg": 0.0010814635048712455,
+            "rps": 924.6729043520112,
+            "percent": -68.57887586708824
+          }
+        },
+        {
+          "name": "Knex-Postgresql",
+          "meta": {},
+          "stat": {
+            "duration": 9.642545238,
+            "cycle": 0,
+            "count": 36630,
+            "avg": 0.00026324174823914826,
+            "rps": 3798.7895411313184,
+            "percent": 29.085903961185323
+          }
+        },
+        {
+          "name": "Knex-MySQL",
+          "meta": {},
+          "stat": {
+            "duration": 6.41299285,
+            "cycle": 0,
+            "count": 12677,
+            "avg": 0.0005058762207146802,
+            "rps": 1976.7681481197972,
+            "percent": -32.82783882633066
+          }
+        },
+        {
+          "name": "Knex-MySQL2",
+          "meta": {},
+          "stat": {
+            "duration": 10.888566403,
+            "cycle": 0,
+            "count": 35383,
+            "avg": 0.00030773440361190404,
+            "rps": 3249.555422672661,
+            "percent": 10.422489760448556
+          }
+        },
+        {
+          "name": "Knex-MSSQL",
+          "meta": {},
+          "stat": {
+            "duration": 5.536229225,
+            "cycle": 0,
+            "count": 5283,
+            "avg": 0.0010479328459208782,
+            "rps": 954.25962063556,
+            "percent": -67.57349560704688
+          }
+        }
+      ]
+    }
+  ],
+  "timestamp": 1662146951397,
+  "generated": "Fri Sep 02 2022 19:29:11 GMT+0000 (Coordinated Universal Time)",
+  "elapsedMs": 467978
+}

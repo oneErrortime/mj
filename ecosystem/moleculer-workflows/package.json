@@ -1,0 +1,93 @@
+{
+	"name": "@moleculer/workflows",
+	"version": "0.1.2",
+	"description": "Advanced Workflow feature for Moleculer microservices framework",
+	"type": "module",
+	"main": "./dist/cjs/index.js",
+	"module": "./dist/esm/index.js",
+	"types": "./dist/types/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/types/index.d.ts",
+			"require": "./dist/cjs/index.js",
+			"import": "./dist/esm/index.js",
+			"default": "./src/index.ts"
+		}
+	},
+	"files": [
+		"README.md",
+		"LICENSE",
+		"dist"
+	],
+	"scripts": {
+		"dev": "nodemon --inspect examples/index.ts",
+		"dev:noservice": "nodemon --inspect=9228 examples/index.ts simple noservice",
+		"ci:unit": "vitest --watch unit",
+		"ci:integration": "vitest --watch integration",
+		"test:unit": "vitest --run unit",
+		"test:integration": "vitest --run integration  --coverage",
+		"test:leak": "tsx --expose-gc examples/leak/index.ts",
+		"test": "vitest --run --coverage",
+		"bench": "node benchmark/index.js",
+		"bench:watch": "nodemon benchmark/index.js",
+		"deps": "ncu -i && npm audit fix",
+		"ci-update-deps": "ncu -u",
+		"lint": "eslint --ext=.ts src examples test",
+		"check": "tsc --noEmit true",
+		"prebuild": "rimraf dist",
+		"build": "tsc -b tsconfig.cjs.json tsconfig.esm.json tsconfig.types.json",
+		"postbuild": "echo {\"type\": \"commonjs\"} > dist/cjs/package.json && echo {\"type\": \"module\"} > dist/esm/package.json",
+		"prepack": "npm run build",
+		"release": "npm publish --access public && git push --tags",
+		"postrelease": "git push origin && git push origin -f --tags"
+	},
+	"keywords": [
+		"workflow",
+		"moleculer",
+		"microservice"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/moleculerjs/workflows.git"
+	},
+	"author": "MoleculerJS",
+	"license": "MIT",
+	"peerDependencies": {
+		"moleculer": "^0.14.12 || ^0.15.0-0"
+	},
+	"dependencies": {
+		"cron-parser": "^5.5.0",
+		"ioredis": "^5.9.2",
+		"lodash": "^4.17.23"
+	},
+	"devDependencies": {
+		"@eslint/js": "^9.39.2",
+		"@types/lodash": "^4.17.23",
+		"@types/node": "^25.1.0",
+		"@vitest/coverage-v8": "^4.0.18",
+		"benchmarkify": "^4.0.0",
+		"eslint": "^9.39.2",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-node": "^11.1.0",
+		"eslint-plugin-prettier": "^5.5.5",
+		"eslint-plugin-promise": "^7.2.1",
+		"eslint-plugin-security": "^3.0.1",
+		"kleur": "^4.1.5",
+		"moleculer": "github:moleculerjs/moleculer#next",
+		"moleculer-repl": "^0.7.4",
+		"moleculer-web": "^0.10.8",
+		"msgpack5": "^6.0.2",
+		"nodemon": "^3.1.11",
+		"npm-check-updates": "^19.3.2",
+		"prettier": "^3.8.1",
+		"rimraf": "^6.1.2",
+		"tsup": "^8.5.1",
+		"tsx": "^4.21.0",
+		"typescript": "^5.9.3",
+		"typescript-eslint": "^8.54.0",
+		"vitest": "^4.0.18"
+	},
+	"engines": {
+		"node": ">= 20.x.x"
+	}
+}

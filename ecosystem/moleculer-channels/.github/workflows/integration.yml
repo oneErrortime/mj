@@ -1,0 +1,120 @@
+name: Integration Test
+
+on:
+  push:
+    branches:
+      - '**'
+    paths-ignore:
+      - 'benchmark/**'
+      - 'docs/**'
+      - 'examples/**'
+      - '*.md'
+
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+      - 'benchmark/**'
+      - 'docs/**'
+      - 'examples/**'
+      - '*.md'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x, 24.x]
+        adapter: [Fake, Redis, Redis-Cluster, AMQP, NATS, Kafka, Multi]
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js ${{ matrix.node-version }} with ${{ matrix.adapter }} adaoter
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Cache node modules
+      uses: actions/cache@v4
+      env:
+        cache-name: cache-node-modules
+      with:
+        # npm cache files are stored in `~/.npm` on Linux/macOS
+        path: ~/.npm
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - name: Install dependencies
+      run: npm ci --legacy-peer-deps
+
+    #- name: Run unit tests
+    #  run: npm run test:unit
+
+    - name: Start containers for Redis adapter
+      if: ${{ matrix.adapter == 'Redis' || matrix.adapter == 'Multi' }}
+      run: docker compose up -d redis
+      working-directory: ./test
+
+    - name: Start containers for Redis cluster adapter
+      if: ${{ matrix.adapter == 'Redis-Cluster' }}
+      run: docker compose up -d redis-node-1 redis-node-2 redis-node-3
+      working-directory: ./test
+
+    - name: Start containers for AMQP adapter
+      if: ${{ matrix.adapter == 'AMQP' || matrix.adapter == 'Multi' }}
+      run: docker compose up -d rabbitmq
+      working-directory: ./test
+
+    - name: Start containers for NATS adapter
+      if: ${{ matrix.adapter == 'NATS' }}
+      run: docker compose up -d nats
+      working-directory: ./test
+
+    - name: Start containers for Kafka adapter
+      if: ${{ matrix.adapter == 'Kafka' }}
+      run: docker compose up -d zookeeper kafka
+      working-directory: ./test
+
+    - name: Sleeping 30 secs
+      if: ${{ matrix.adapter != 'Fake' }}
+      run: sleep 30
+
+    - name: Check containers
+      run: docker compose ps
+      working-directory: ./test
+
+    - name: Check logs
+      run: docker compose logs
+      working-directory: ./test
+
+    - name: Run tests
+      run: npm test
+      timeout-minutes: 5
+      env:
+        GITHUB_ACTIONS_CI: true
+        ADAPTER: ${{ matrix.adapter }}
+
+    # - name: Run leak detection tests
+    #   run: npm run test:leak
+    #   env:
+    #     GITHUB_ACTIONS_CI: true
+
+    - name: Show container logs (in case of failure)
+      run: docker compose logs
+      if: failure()
+      working-directory: ./test
+
+    - name: Stop containers
+      run: docker compose down -v
+      working-directory: ./test
+
+    # - name: Upload code coverage
+    #   run: npm run coverall
+    #   if: success() && github.ref == 'refs/heads/master'
+    #   env:
+    #     COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
