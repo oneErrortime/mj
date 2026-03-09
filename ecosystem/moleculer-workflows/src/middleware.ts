@@ -14,7 +14,7 @@ import {
 	Context,
 	Middleware,
 	ActionSchema
-} from "moleculer";
+} from "./moleculer-compat.ts";
 import Workflow from "./workflow.ts";
 import BaseAdapter, {
 	ListJobResult,

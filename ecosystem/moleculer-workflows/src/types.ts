@@ -4,7 +4,7 @@
  * MIT Licensed
  */
 
-import { Context, Errors } from "moleculer";
+import { Context, Errors } from "./moleculer-compat.ts";
 
 import type { ResolvableAdapterType } from "./adapters/index.ts";
 import BaseAdapter, {

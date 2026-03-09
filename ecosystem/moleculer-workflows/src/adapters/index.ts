@@ -7,7 +7,7 @@
 "use strict";
 
 import _ from "lodash";
-import { Errors } from "moleculer";
+import { Errors } from "../moleculer-compat.ts";
 import BaseAdapter, { BaseDefaultOptions } from "./base.ts";
 import RedisAdapter, { RedisAdapterOptions } from "./redis.ts";
 
