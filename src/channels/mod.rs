@@ -36,6 +36,7 @@
 //! | `x-error-type`           | Error type string                      |
 
 pub mod adapter;
+pub mod adapter_redis;
 pub mod dead_letter;
 pub mod registry;
 
@@ -168,6 +169,8 @@ impl ChannelDef {
 pub struct SendOptions {
     pub headers: HashMap<String, String>,
     pub key: Option<String>,
+    /// Optional MAXLEN for Redis Streams (XADD MAXLEN ~ N)
+    pub max_len: Option<u64>,
 }
 impl SendOptions {
     pub fn new() -> Self { Self::default() }

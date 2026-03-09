@@ -28,6 +28,19 @@
 //! | Channels: Consumer Group | ✅     | group-based competing consumers          |
 //! | Channels: ACK/NACK       | ✅     | explicit acknowledgement                 |
 //! | Laboratory Agent         | ✅     | HTTP API + topology graph                |
+//! | Channels: Redis Streams   | ✅     | raw RESP over Tokio TCP, no redis crate  |
+//! | **Database**             | ✅     | `@moleculer/database` equivalent         |
+//! | Database: SQLite adapter | ✅     | embedded, schemaless JSON storage        |
+//! | Database: CRUD actions   | ✅     | find/count/list/get/create/update/remove |
+//! | Database: Query ops      | ✅     | $eq/$ne/$gt/$gte/$lt/$lte/$in/$nin/$exists |
+//! | Database: Sort+paginate  | ✅     | sort by fields, limit/offset, page/pageSize |
+//! | Database: Soft delete    | ✅     | configurable deleted-at field            |
+//! | **Workflows**            | ✅     | `@moleculer/workflows` equivalent        |
+//! | Workflows: Job queue     | ✅     | SQLite-backed, schemaless params         |
+//! | Workflows: Delay/retry   | ✅     | exponential backoff, max retries         |
+//! | Workflows: Signals       | ✅     | inter-job communication with expiry      |
+//! | Workflows: Job lifecycle | ✅     | waiting→active→completed/failed/delayed  |
+//! | Workflows: Stall detect  | ✅     | auto-requeue stalled active jobs         |
 //! | Lab: Metrics reporter    | ✅     |                                          |
 //! | Lab: Trace exporter      | ✅     |                                          |
 //! | Lab: Event logger        | ✅     |                                          |
@@ -59,6 +72,7 @@ pub mod cache;
 pub mod channels;
 pub mod config;
 pub mod context;
+pub mod database;
 pub mod error;
 pub mod middleware;
 pub mod registry;
@@ -66,6 +80,7 @@ pub mod service;
 pub mod transporter;
 pub mod metrics;
 pub mod tracing;
+pub mod workflows;
 
 #[cfg(feature = "laboratory")]
 pub mod laboratory;
@@ -78,6 +93,9 @@ pub mod prelude {
     pub use crate::error::{MoleculerError, Result};
     pub use crate::service::{ActionDef, EventDef, ServiceSchema};
     pub use crate::channels::{ChannelDef, ChannelMessage};
+    pub use crate::database::{DatabaseMixin, MixinOptions, SqliteAdapter};
+    pub use crate::workflows::{WorkflowsMiddleware, MiddlewareOptions, WorkflowDef, Job};
+    pub use crate::channels::adapter_redis::{RedisStreamsAdapter, RedisAdapterOptions};
     pub use crate::middleware::Middleware;
 }
 

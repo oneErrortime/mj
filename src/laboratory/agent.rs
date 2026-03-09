@@ -79,7 +79,7 @@ impl AgentService {
             log::info!("[Laboratory] Token required (Bearer ***)");
         }
 
-        for request in server.incoming_requests() {
+        for mut request in server.incoming_requests() {
             let agent = Arc::clone(&self);
             let resp = agent.handle(&mut request);
             let _ = request.respond(resp);
@@ -327,7 +327,7 @@ impl AgentService {
                 }
             },
 
-            (Method::Get, \"/circuit-breakers\") => {
+            (Method::Get, "/circuit-breakers") => {
                 let cbs: Vec<Value> = self.broker.cb_middleware.as_ref()
                     .map(|cb| cb.snapshot().into_iter().map(|(name, state, count, failures)| json!({
                         "action": name,

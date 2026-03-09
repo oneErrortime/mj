@@ -58,6 +58,13 @@ pub enum MoleculerError {
     #[error("Cache error: {0}")]
     Cache(String),
 
+    // ------ Database / Workflows ------
+    #[error("Entity not found: {0}")]
+    NotFound(String),
+
+    #[error("Database error: {0}")]
+    Database(String),
+
     // ------ Generic ------
     #[error("Internal error: {0}")]
     Internal(String),

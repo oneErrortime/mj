@@ -104,7 +104,7 @@ impl ServiceBroker {
 
         if cfg.circuit_breaker.enabled {
             if let Some(ref cb) = self.cb_middleware {
-                self.add_middleware(Arc::clone(cb)).await;
+                self.add_middleware(Arc::clone(cb) as Arc<dyn Middleware>).await;
             }
         }
 
