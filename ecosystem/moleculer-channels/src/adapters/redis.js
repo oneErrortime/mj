@@ -8,7 +8,7 @@
 
 const _ = require("lodash");
 const BaseAdapter = require("./base");
-const { ServiceSchemaError, MoleculerRetryableError, MoleculerError } = require("moleculer").Errors;
+const { Errors: { ServiceSchemaError, MoleculerRetryableError, MoleculerError } } = require("moleculer-rs-client/src/compat");
 const C = require("../constants");
 const { transformErrorToHeaders } = require("../utils");
 

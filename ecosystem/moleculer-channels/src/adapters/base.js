@@ -8,8 +8,7 @@
 
 const _ = require("lodash");
 const semver = require("semver");
-const { MoleculerError } = require("moleculer").Errors;
-const { Serializers, METRIC } = require("moleculer");
+const { Errors: { MoleculerError }, Serializers, METRIC } = require("moleculer-rs-client/src/compat");
 const C = require("../constants");
 const { transformErrorToHeaders, transformHeadersToErrorData } = require("../utils");
 
