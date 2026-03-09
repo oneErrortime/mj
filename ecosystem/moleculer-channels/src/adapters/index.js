@@ -10,7 +10,7 @@
  * @typedef {import("./base")} BaseAdapter
  */
 const { isObject, isString } = require("lodash");
-const { ServiceSchemaError } = require("moleculer").Errors;
+const { Errors: { ServiceSchemaError } } = require("moleculer-rs-client/src/compat");
 
 const Adapters = {
 	Base: require("./base"),

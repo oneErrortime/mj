@@ -198,3 +198,13 @@ impl std::fmt::Debug for ChannelDef {
             .finish()
     }
 }
+
+pub mod redis_adapter;
+pub mod amqp_adapter;
+pub mod nats_adapter;
+pub mod kafka_adapter;
+
+pub use redis_adapter::{RedisStreamAdapter, RedisStreamOptions};
+pub use amqp_adapter::{AmqpAdapter, AmqpOptions};
+pub use nats_adapter::{NatsJetStreamAdapter, NatsJetStreamOptions};
+pub use kafka_adapter::{KafkaAdapter, KafkaOptions};

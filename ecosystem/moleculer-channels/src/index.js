@@ -7,8 +7,7 @@
 "use strict";
 
 const _ = require("lodash");
-const { Context, METRIC } = require("moleculer");
-const { BrokerOptionsError, ServiceSchemaError, MoleculerError } = require("moleculer").Errors;
+const { Context, METRIC, Errors: { BrokerOptionsError, ServiceSchemaError, MoleculerError } } = require("moleculer-rs-client/src/compat");
 const Adapters = require("./adapters");
 const C = require("./constants");
 

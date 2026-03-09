@@ -102,3 +102,9 @@ impl MetricsRegistry {
 }
 
 impl Default for MetricsRegistry { fn default() -> Self { Self::new() } }
+
+pub mod reporters;
+pub use reporters::{
+    MetricsReporter, ReporterRegistry,
+    ConsoleReporter, CsvReporter, StatsdReporter, DatadogMetricsReporter, EventReporter,
+};

@@ -5,10 +5,10 @@
  */
 
 import _ from "lodash";
-import { Utils } from "moleculer";
+import { Utils } from "./moleculer-compat.ts";
 const { isFunction, isPlainObject, safetyObject } = Utils;
 
-import type { ServiceBroker, Tracer } from "moleculer";
+import type { ServiceBroker, Tracer } from "./moleculer-compat.ts";
 import type { WorkflowOptions } from "./workflow.ts";
 import { WorkflowHandler } from "./types.ts";
 

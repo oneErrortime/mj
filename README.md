@@ -1,6 +1,6 @@
 # moleculer-rs 🦀
 
-> Full-featured Rust port of [Moleculer.js](https://moleculer.services) — a progressive microservices framework.
+> **Full-featured Rust port of the entire Moleculer.js ecosystem** — a progressive microservices framework.
 
 [![Rust](https://img.shields.io/badge/rust-1.75+-orange)](https://www.rust-lang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -9,105 +9,125 @@
 
 ## What is Moleculer?
 
-Moleculer is a fast, modern microservices framework. This project is a complete Rust reimplementation — with fearless concurrency, zero-cost abstractions, and no garbage collector.
+Moleculer is a fast, modern microservices framework. This project is a complete Rust reimplementation — covering all four official repositories:
+
+| Original JS Repo | Rust status |
+|---|---|
+| `moleculerjs/moleculer` | ✅ Full port |
+| `moleculerjs/moleculer-channels` | ✅ Full port |
+| `moleculerjs/database` | ✅ Full port |
+| `moleculerjs/workflows` | ✅ Full port |
+
+---
 
 ## Architecture
 
 ```
-┌───────────────────────────────────────────────────────────────────────────┐
-│                            ServiceBroker                                  │
-│                                                                           │
-│  ┌────────────────┐   ┌──────────────────────────────────────────────┐   │
-│  │    Registry    │   │         Middleware Pipeline                   │   │
-│  │  • services    │   │  Logging → Metrics → Tracing → Timeout →     │   │
-│  │  • actions     │   │  Retry → CircuitBreaker → Bulkhead → Cacher  │   │
-│  │  • events      │   └──────────────────────────────────────────────┘   │
-│  │  • nodes       │                                                       │
-│  │  • topology    │   ┌──────────────┐  ┌───────────┐  ┌──────────────┐ │
-│  └────────────────┘   │   Channels   │  │  Metrics  │  │   Tracing    │ │
-│                        │  • InMemory  │  │  Counter  │  │  SpanStore   │ │
-│  ┌────────────────┐   │  • DLQ       │  │  Gauge    │  │  Parent/child│ │
-│  │   LRU Cacher   │   │  • Consumer  │  │  Histogram│  │  Exporters   │ │
-│  │  • Memory LRU  │   │    Groups    │  │  Prometheus│ └──────────────┘ │
-│  │  • Key gen     │   │  • ACK/NACK  │  └───────────┘                   │
-│  └────────────────┘   └──────────────┘                                   │
-│                                                                           │
-│  ┌────────────────────────────────────────────────────────────────────┐  │
-│  │                    Laboratory Agent (:3210)                        │  │
-│  │  /health /info /services /topology /metrics /traces /logs          │  │
-│  │  /channels /cache /metrics/prometheus /nodes /actions              │  │
-│  └────────────────────────────────────────────────────────────────────┘  │
-└───────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                            ServiceBroker                                │
+│                                                                         │
+│  ┌────────────────┐   ┌──────────────────────────────────────────────┐ │
+│  │    Registry    │   │         Middleware Pipeline                   │ │
+│  │  • services    │   │  Logging → Metrics → Tracing → Timeout →     │ │
+│  │  • actions     │   │  Retry → CircuitBreaker → Bulkhead →         │ │
+│  │  • events      │   │  Throttle → Debounce → Fallback → Cacher     │ │
+│  │  • nodes       │   └──────────────────────────────────────────────┘ │
+│  │  • topology    │                                                     │
+│  └────────────────┘   ┌──────────────────────────────────────────────┐ │
+│                        │           Channels (durable queues)          │ │
+│  ┌────────────────┐   │  • InMemory  • Redis Streams                 │ │
+│  │    Cachers     │   │  • AMQP      • NATS JetStream                │ │
+│  │  • Memory LRU  │   │  • Kafka                                     │ │
+│  │  • Redis       │   │  Consumer groups, ACK/NACK, DLQ, backoff     │ │
+│  └────────────────┘   └──────────────────────────────────────────────┘ │
+│                                                                         │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │                    Transporters                                    │ │
+│  │  • LocalTransporter (in-process)                                  │ │
+│  │  • TcpTransporter  (P2P Gossip + UDP discovery)                   │ │
+│  │  • NatsTransporter (requires 'nats' feature)                      │ │
+│  │  • RedisTransporter (requires 'redis' feature)                    │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │                 Distributed Tracing                               │   │
+│  │  • Console  • Jaeger  • Zipkin  • Datadog  • Event               │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                                                         │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │               Laboratory Agent  (:3210)                          │   │
+│  │  /health /info /services /topology /metrics /traces /logs        │   │
+│  │  /channels /cache /metrics/prometheus /nodes /actions            │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
 
 ## Features
 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | ServiceBroker | ✅ | call / emit / broadcast / ping |
-| ServiceSchema | ✅ | actions, events, hooks |
-| Mixins | ✅ | Schema composition + merge |
+| ServiceSchema | ✅ | actions, events, hooks, mixins |
 | Context | ✅ | params, meta, headers, tracing, level |
-| Service Registry | ✅ | Local catalog, endpoint resolution |
-| Load Balancing | ✅ | Round-Robin, Random, Shard |
-| **Circuit Breaker** | ✅ | Full CLOSED/HALF_OPEN/OPEN state machine |
-| **Retry Policy** | ✅ | Exponential backoff, retryable errors |
+| Service Registry | ✅ | local catalog, endpoint resolution |
+| Load Balancing | ✅ | Round-Robin, Random, Shard, CPU, Latency |
+| **Circuit Breaker** | ✅ | CLOSED/HALF_OPEN/OPEN state machine |
+| **Retry Policy** | ✅ | Exponential backoff, retryable flag |
 | **Bulkhead** | ✅ | Semaphore + overflow queue per action |
-| **Cacher (LRU)** | ✅ | Memory LRU, key generation, TTL |
+| **Throttle** | ✅ | Rate limiting per action |
+| **Debounce** | ✅ | Delay + reset on repeat calls |
+| **Fallback** | ✅ | Custom fallback on action failure |
+| Context Tracker | ✅ | Graceful shutdown, in-flight tracking |
+| **Cacher: LRU** | ✅ | Memory LRU, TTL, key generation |
+| **Cacher: Redis** | ✅ | Distributed cache (`redis` feature) |
 | Timeout | ✅ | Per-request timeout middleware |
-| Middleware Pipeline | ✅ | Full ordered pipeline |
-| Transporter | ✅ | Trait + in-process LocalTransporter |
-| Metrics | ✅ | Counter, Gauge, Histogram + Prometheus export |
-| Distributed Tracing | ✅ | Spans, parent/child, by-trace query |
-| **Channels (durable queues)** | ✅ | `@moleculer/channels` equivalent |
-| Channels: In-memory | ✅ | Tokio MPSC-backed |
-| Channels: Consumer Groups | ✅ | Competing consumers within a group |
+| Middleware Pipeline | ✅ | Full ordered pipeline, custom hooks |
+| **Transporter: Local** | ✅ | In-process broadcast |
+| **Transporter: TCP** | ✅ | P2P Gossip + UDP multicast discovery |
+| **Transporter: NATS** | ✅ | (`nats` feature) |
+| **Transporter: Redis** | ✅ | Pub/Sub (`redis` feature) |
+| Metrics | ✅ | Counter, Gauge, Histogram + Prometheus |
+| Distributed Tracing | ✅ | Spans, parent/child, sampling |
+| **Tracing: Console** | ✅ | Dev-friendly stdout exporter |
+| **Tracing: Jaeger** | ✅ | HTTP collector format |
+| **Tracing: Zipkin** | ✅ | v2 HTTP API |
+| **Tracing: Datadog** | ✅ | APM agent format |
+| **Tracing: Event** | ✅ | Emit as moleculer events |
+| **Channels: InMemory** | ✅ | Tokio MPSC-backed |
+| **Channels: Redis** | ✅ | Redis Streams XREADGROUP (`redis` feature) |
+| **Channels: AMQP** | ✅ | RabbitMQ (`amqp` feature) |
+| **Channels: NATS JS** | ✅ | JetStream (`nats` feature) |
+| **Channels: Kafka** | ✅ | rdkafka (`kafka` feature) |
+| Channels: DLQ | ✅ | Dead Letter Queue |
+| Channels: Consumer Groups | ✅ | Competing consumers |
 | Channels: ACK/NACK | ✅ | Explicit acknowledgement |
-| Channels: Retry + backoff | ✅ | Exponential backoff on NACK |
-| Channels: Dead Letter Queue | ✅ | Configurable DLQ per channel |
+| Channels: Retry+backoff | ✅ | Exponential backoff on NACK |
+| **@moleculer/database** | ✅ | Full CRUD mixin |
+| Database: MemoryAdapter | ✅ | HashMap-backed, dev/test |
+| Database: find/list/count | ✅ | Filter, sort, paginate, search |
+| Database: CRUD actions | ✅ | create/get/update/replace/remove |
+| **Workflows** | ✅ | Declarative step pipelines |
+| Workflows: Dependencies | ✅ | `depends_on` DAG resolution |
+| Workflows: Conditions | ✅ | Per-step predicates |
+| Workflows: Transforms | ✅ | Map context → params |
+| Workflows: allow_failure | ✅ | Non-fatal steps |
+| **Discoverers: Local** | ✅ | Heartbeat over transporter |
+| **Discoverers: Redis** | ✅ | Redis key-value (`redis` feature) |
+| **Discoverers: etcd3** | ✅ | Leased keys (stub, API complete) |
+| Serializers: JSON | ✅ | Always on |
+| Serializers: MsgPack | ✅ | (`msgpack` feature) |
+| Transmit: Compression | ✅ | Deflate codec |
+| Transmit: Encryption | ✅ | AES-256-CBC codec |
+| Distributed Lock | ✅ | In-process + Redis (`redis` feature) |
+| `$node` service | ✅ | list/services/actions/events/health |
+| **Runner** | ✅ | Env-based config + graceful shutdown |
 | Laboratory Agent | ✅ | HTTP JSON API on :3210 |
-| Lab: Topology graph | ✅ | Service call graph (who calls whom) |
-| Lab: Metrics reporter | ✅ | Real-time metrics snapshot |
-| Lab: Trace exporter | ✅ | Recent distributed spans |
-| Lab: Event logger | ✅ | In-memory ring-buffer log collector |
-| Lab: Prometheus metrics | ✅ | `/metrics/prometheus` endpoint |
-
----
-
-## What was learned from reverse-engineering Moleculer
-
-### What the original has that we now implement
-
-**1. Circuit Breaker** — not just config, a real state machine:
-- `CLOSED` → counts failures in a rolling window
-- `OPEN` when `failures/total >= threshold` and `count >= minRequestCount`
-- `HALF_OPEN` after `halfOpenTime` ms — lets ONE probe request through
-- `HALF_OPEN_WAIT` — blocks all others while probe is in flight
-- `CLOSED` again if probe succeeds; re-`OPEN` if it fails
-
-**2. Retry** — exponential backoff with `factor`:
-```
-delay = min(delay * factor^(attempt-1), maxDelay)
-```
-
-**3. Bulkhead** — semaphore per action, with overflow queue up to `maxQueueSize`
-
-**4. Cacher** — transparent `get/set` around actions with `cache: true` + key templates
-
-**5. `@moleculer/channels`** — the critical missing module:
-- Messages stored durably until ACK'd (unlike `emit` which is fire-and-forget)
-- Each channel has consumer groups — within a group, messages are load-balanced
-- `maxInFlight` limits concurrent processing per consumer
-- NACK triggers exponential-backoff retry
-- After `maxRetries` NACKs → Dead Letter Queue
-
-**6. Laboratory topology graph** (the network diagram in the screenshot):
-- Each service is a node
-- Each `broker.call()` creates an edge with `req/min` and `latency`
-- The registry tracks call stats per `(caller → action)` pair
-
-**7. Mixins** — schema composition: a mixin's actions/events merge into the service,
-but own definitions take priority
+| Lab: Topology graph | ✅ | Service call graph |
+| Lab: Metrics reporter | ✅ | Real-time snapshot |
+| Lab: Trace exporter | ✅ | Recent spans |
+| Lab: Prometheus | ✅ | `/metrics/prometheus` |
 
 ---
 
@@ -145,16 +165,35 @@ async fn main() {
 }
 ```
 
+## @moleculer/database
+
+```rust
+use moleculer::database::{DatabaseMixin, MemoryAdapter, DatabaseOptions};
+
+let users_svc = DatabaseMixin::new(MemoryAdapter::new())
+    .apply(ServiceSchema::new("users"));
+
+broker.add_service(users_svc).await;
+
+// Now available:
+broker.call("users.create", json!({ "name": "Alice" })).await?;
+broker.call("users.list",   json!({ "page": 1, "pageSize": 10 })).await?;
+broker.call("users.find",   json!({ "query": { "role": "admin" } })).await?;
+broker.call("users.get",    json!({ "id": "uuid-here" })).await?;
+broker.call("users.update", json!({ "id": "uuid-here", "role": "superadmin" })).await?;
+broker.call("users.remove", json!({ "id": "uuid-here" })).await?;
+```
+
 ## Channels (durable queues)
 
 ```rust
 use moleculer::channels::{ChannelDef, ChannelMessage};
 
-// Subscribe
+// Subscribe (in-memory adapter — add redis/nats/amqp/kafka features for production)
 broker.subscribe_channel(
     ChannelDef::new("orders.created", |msg: ChannelMessage| async move {
         println!("Order: {}", msg.payload);
-        msg.ack().await  // or msg.nack() to retry
+        msg.ack().await
     })
     .group("order-processor")
     .max_in_flight(5)
@@ -166,61 +205,56 @@ broker.subscribe_channel(
 broker.send_to_channel("orders.created", json!({ "id": "ORD-001" })).await.unwrap();
 ```
 
-## Circuit Breaker
+## Workflows
 
 ```rust
-let config = BrokerConfig::default().with_circuit_breaker();
-// After 50% failure rate over 20+ requests:
-// → circuit OPENS → subsequent calls immediately fail with CircuitBreakerOpen
-// → after 10s → HALF_OPEN → probe request allowed through
-// → success → CLOSED again
+use moleculer::workflows::{Workflow, Step};
+
+let wf = Workflow::builder("checkout")
+    .step(Step::call("payment.charge")
+        .params(|ctx| ctx.params.clone()))
+    .step(Step::call("inventory.reserve")
+        .depends_on("payment.charge")
+        .params(|ctx| ctx.outputs.get("payment_charge").cloned().unwrap_or_default()))
+    .step(Step::call("email.send")
+        .depends_on("inventory.reserve")
+        .allow_failure())
+    .build();
+
+let result = wf.run(&broker, json!({ "userId": "u1", "total": 99.99 })).await?;
+println!("outputs: {:?}", result.outputs);
 ```
 
-## Laboratory
+## Feature Flags
 
-```rust
-use moleculer::laboratory::{AgentService, AgentConfig};
-use std::sync::Arc;
-
-let agent = Arc::new(AgentService::with_config(
-    Arc::clone(&broker),
-    AgentConfig { port: 3210, token: None, name: "my-app".into() },
-));
-agent.spawn(); // background thread
-
-// Now open https://lab.moleculer.services → http://localhost:3210
+```toml
+[dependencies]
+moleculer-rs = { version = "0.2", features = ["redis", "nats", "msgpack"] }
 ```
 
-### API Endpoints
-
-| Endpoint | Description |
-|----------|-------------|
-| `GET /health` | Health check |
-| `GET /info` | Node, broker, feature flags |
-| `GET /services` | Services with actions/events |
-| `GET /nodes` | Cluster nodes |
-| `GET /actions` | All action endpoints |
-| `GET /topology` | Service call graph (nodes + edges with latency) |
-| `GET /metrics` | Metrics snapshot (JSON) |
-| `GET /metrics/prometheus` | Prometheus text format |
-| `GET /traces` | Recent spans (last 500) |
-| `GET /traces/{trace_id}` | All spans for a trace |
-| `GET /logs` | Recent log entries |
-| `GET /channels` | Channel stats + DLQ info |
-| `GET /cache` | Cache stats |
+| Flag | Enables |
+|------|---------|
+| `nats` | NATS transporter + JetStream channel adapter |
+| `redis` | Redis transporter, cacher, channel adapter, discoverer, lock |
+| `amqp` | AMQP (RabbitMQ) channel adapter |
+| `kafka` | Kafka channel adapter |
+| `msgpack` | MessagePack serializer |
+| `laboratory` | HTTP Laboratory Agent |
+| `database` | `@moleculer/database` CRUD mixin |
+| `full` | All of the above |
 
 ## Roadmap
 
-- [ ] Redis Streams channel adapter
-- [ ] AMQP channel adapter  
-- [ ] NATS JetStream channel adapter
-- [ ] Kafka channel adapter
-- [ ] NATS / Redis transporter
-- [ ] Parameter validation (JSON Schema)
-- [ ] Action fallback handler
-- [ ] `$node` internal service
+- [ ] MongoDB adapter for `@moleculer/database`
+- [ ] SQL/Knex adapter (via `sqlx`)
+- [ ] NeDB adapter  
 - [ ] Hot reload
 - [ ] WebSocket push from Laboratory (live updates)
+- [ ] `$node` internal service auto-registration
+- [ ] AMQP10 / MQTT / STAN transporters
+- [ ] Full Redlock implementation
+- [ ] etcd3 real client (via `etcd-client`)
+- [ ] Parameter validation (JSON Schema via `jsonschema`)
 
 ## License
 

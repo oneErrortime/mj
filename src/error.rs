@@ -43,8 +43,12 @@ pub enum MoleculerError {
     ChannelAdapter(String),
 
     // ------ Validation ------
-    #[error("Validation error: {0}")]
-    Validation(String),
+    #[error("Validation error: {message}")]
+    Validation {
+        message: String,
+        /// Individual field failures (serialised `ValidationFailure` objects).
+        failures: Vec<serde_json::Value>,
+    },
 
     // ------ Serialization ------
     #[error("Serialization error: {0}")]
@@ -59,6 +63,9 @@ pub enum MoleculerError {
     Cache(String),
 
     // ------ Generic ------
+    #[error("Validation failed: {0}")]
+    ValidationFailed(String),
+
     #[error("Internal error: {0}")]
     Internal(String),
 
@@ -89,7 +96,7 @@ impl MoleculerError {
             MoleculerError::RequestTimeout(_) => 504,
             MoleculerError::CircuitBreakerOpen(_) => 503,
             MoleculerError::QueueFull(_) => 429,
-            MoleculerError::Validation(_) => 422,
+            MoleculerError::Validation { .. } => 422,
             MoleculerError::MaxCallLevelReached(_) => 500,
             _ => 500,
         }

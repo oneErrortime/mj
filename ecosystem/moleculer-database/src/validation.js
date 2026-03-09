@@ -6,8 +6,8 @@
 
 "use strict";
 
-const { Context } = require("moleculer"); // eslint-disable-line no-unused-vars
-const { ServiceSchemaError, ValidationError } = require("moleculer").Errors;
+const { Context } = require("moleculer-rs-client/src/compat"); // eslint-disable-line no-unused-vars
+const { Errors: { ServiceSchemaError, ValidationError } } = require("moleculer-rs-client/src/compat");
 const _ = require("lodash");
 const { generateValidatorSchemaFromFields } = require("./schema");
 

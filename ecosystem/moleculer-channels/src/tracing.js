@@ -7,7 +7,7 @@
 "use strict";
 
 const _ = require("lodash");
-const { isFunction, isPlainObject, safetyObject } = require("moleculer").Utils;
+const { Utils: { isFunction, isPlainObject, safetyObject } } = require("moleculer-rs-client/src/compat");
 
 module.exports = function TracingMiddleware() {
 	let broker, tracer;

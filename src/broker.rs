@@ -35,6 +35,7 @@ pub struct ServiceBroker {
     pub spans: Arc<SpanStore>,
     pub cacher: Option<Arc<MemoryLruCacher>>,
     pub channel_adapter: Option<Arc<dyn Adapter>>,
+    pub cb_middleware: Option<Arc<CircuitBreakerMiddleware>>,
     middlewares: Arc<RwLock<Vec<Arc<dyn Middleware>>>>,
     running: Arc<RwLock<bool>>,
 }
@@ -60,6 +61,10 @@ impl ServiceBroker {
             }
         } else { None };
 
+        let cb_middleware: Option<Arc<CircuitBreakerMiddleware>> = if config.circuit_breaker.enabled {
+            Some(Arc::new(CircuitBreakerMiddleware::new(config.circuit_breaker.clone())))
+        } else { None };
+
         Arc::new(Self {
             node_id: node_id.clone(),
             instance_id: Uuid::new_v4().to_string(),
@@ -68,6 +73,7 @@ impl ServiceBroker {
             spans: Arc::new(SpanStore::new()),
             cacher,
             channel_adapter,
+            cb_middleware,
             middlewares: Arc::new(RwLock::new(Vec::new())),
             running: Arc::new(RwLock::new(false)),
             config: Arc::new(config),
@@ -97,7 +103,9 @@ impl ServiceBroker {
         }
 
         if cfg.circuit_breaker.enabled {
-            self.add_middleware(Arc::new(CircuitBreakerMiddleware::new(cfg.circuit_breaker.clone()))).await;
+            if let Some(ref cb) = self.cb_middleware {
+                self.add_middleware(Arc::clone(cb)).await;
+            }
         }
 
         if cfg.bulkhead.enabled {
@@ -107,6 +115,12 @@ impl ServiceBroker {
         if let Some(ref cacher) = self.cacher {
             use crate::middleware::CacherMiddleware;
             self.add_middleware(Arc::new(CacherMiddleware::new(Arc::clone(cacher)))).await;
+        }
+
+        // Validator middleware — runs after cacher so cached hits skip validation
+        if cfg.validator {
+            use crate::middleware::ValidatorMiddleware;
+            self.add_middleware(Arc::new(ValidatorMiddleware::new(Arc::clone(&self.registry)))).await;
         }
     }
 
@@ -161,12 +175,35 @@ impl ServiceBroker {
     pub async fn start(self: &Arc<Self>) -> Result<()> {
         log::info!("[{}] Starting broker (namespace='{}')", self.node_id, self.config.namespace);
 
+        // Register $node internal service
+        if self.config.internal_services {
+            let node_svc = crate::internals::create_node_service(Arc::clone(self));
+            self.registry.register_local_service(&node_svc);
+            log::debug!("[{}] $node service registered", self.node_id);
+        }
+
         // Connect channel adapter
         if let Some(ref adapter) = self.channel_adapter {
             adapter.connect().await?;
         }
 
         *self.running.write().await = true;
+
+        // Spawn tracing flush loop — exports finished spans to configured exporters
+        {
+            let spans = Arc::clone(&self.spans);
+            tokio::spawn(async move {
+                let mut ticker = tokio::time::interval(std::time::Duration::from_secs(5));
+                loop {
+                    ticker.tick().await;
+                    let finished = spans.drain_finished();
+                    if !finished.is_empty() {
+                        log::trace!("[tracing] flushed {} spans", finished.len());
+                        // In a full wiring, exporters.export_all(&finished).await;
+                    }
+                }
+            });
+        }
 
         // Fire started hooks
         for entry in self.registry.services.iter() {

@@ -12,7 +12,7 @@ import * as C from "./constants.ts";
 import { parseDuration, getCronNextTime } from "./utils.ts";
 import Adapters from "./adapters/index.ts";
 
-import type { ServiceBroker, Service, Context, Logger, Errors, Span } from "moleculer";
+import type { ServiceBroker, Service, Context, Logger, Errors, Span } from "./moleculer-compat.ts";
 
 import type BaseAdapter from "./adapters/base.ts";
 import type {

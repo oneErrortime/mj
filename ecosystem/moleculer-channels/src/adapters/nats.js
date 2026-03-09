@@ -11,7 +11,7 @@ const _ = require("lodash");
 const C = require("../constants");
 const { INVALID_MESSAGE_SERIALIZATION_ERROR_CODE } = require("../constants");
 const { transformErrorToHeaders } = require("../utils");
-const { MoleculerRetryableError, MoleculerError } = require("moleculer").Errors;
+const { Errors: { MoleculerRetryableError, MoleculerError } } = require("moleculer-rs-client/src/compat");
 
 let NATS;
 

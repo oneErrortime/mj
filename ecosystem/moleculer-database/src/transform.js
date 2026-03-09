@@ -6,7 +6,7 @@
 
 "use strict";
 
-const { ServiceSchemaError, ValidationError } = require("moleculer").Errors;
+const { Errors: { ServiceSchemaError, ValidationError } } = require("moleculer-rs-client/src/compat");
 const _ = require("lodash");
 
 function deepResolve(values, resolvedObj) {

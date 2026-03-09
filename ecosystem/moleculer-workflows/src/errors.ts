@@ -6,7 +6,7 @@
 
 "use strict";
 
-import { Errors } from "moleculer";
+import { Errors } from "./moleculer-compat.ts";
 const { MoleculerError, MoleculerRetryableError } = Errors;
 
 export class WorkflowError extends MoleculerError {

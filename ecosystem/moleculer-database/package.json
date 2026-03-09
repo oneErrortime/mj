@@ -29,9 +29,6 @@
   },
   "author": "MoleculerJS",
   "license": "MIT",
-  "peerDependencies": {
-    "moleculer": "^0.14.12 || ^0.15.0-0"
-  },
   "devDependencies": {
     "@seald-io/nedb": "^4.1.1",
     "@vscode/sqlite3": "^5.1.2",
@@ -82,6 +79,7 @@
     "fastest-validator": "^1.19.1",
     "lodash": "^4.17.21",
     "semver": "^7.7.2",
-    "sqlite3": "^5.1.7"
+    "sqlite3": "^5.1.7",
+    "moleculer-rs-client": "file:../moleculer-rs-client"
   }
 }

@@ -205,12 +205,20 @@
       margin: 10px 18px;
     }
 
+    /* mobile sidebar backdrop */
+    .sidebar-backdrop {
+      display: none; position: fixed; inset: 0; z-index: 240;
+      background: rgba(0,0,0,.55);
+    }
+    .sidebar-backdrop.visible { display: block; }
+
     @media (max-width: 768px) {
       .sidebar {
         position: fixed; top: var(--topbar-h); left: 0; z-index: 250;
         transform: translateX(-100%);
+        transition: transform .22s cubic-bezier(.4,0,.2,1);
       }
-      .sidebar.open { transform: translateX(0); }
+      .sidebar.open { transform: translateX(0); box-shadow: 4px 0 32px rgba(0,0,0,.4); }
     }
 
     /* ─── MAIN CONTENT ────────────── */
@@ -462,6 +470,64 @@
       border-radius: 3px; padding: 1px 5px; margin-right: 4px;
     }
 
+    /* ─── TOC PANEL ──────────────── */
+    .toc-panel {
+      width: 220px; flex-shrink: 0;
+      position: sticky; top: calc(var(--topbar-h) + 24px);
+      max-height: calc(100vh - var(--topbar-h) - 48px);
+      overflow-y: auto; align-self: flex-start;
+      padding: 0 0 24px 20px;
+    }
+    .toc-title {
+      font-family: var(--mono); font-size: 10px; font-weight: 700;
+      color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px;
+      margin-bottom: 10px; padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .toc-list { list-style: none; padding: 0; margin: 0; }
+    .toc-item {
+      font-size: 12.5px; line-height: 1.5;
+      margin-bottom: 2px;
+    }
+    .toc-item a {
+      display: block; padding: 4px 8px;
+      color: var(--text-dim); text-decoration: none;
+      border-left: 2px solid transparent;
+      border-radius: 0 4px 4px 0;
+      transition: color .15s, border-color .15s, background .15s;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .toc-item a:hover { color: var(--text-mid); }
+    .toc-item.active > a {
+      color: var(--accent); border-left-color: var(--accent);
+      background: var(--accent-dim);
+    }
+    .toc-item.h3 > a { padding-left: 20px; font-size: 11.5px; }
+    .toc-panel::-webkit-scrollbar { width: 3px; }
+    .toc-panel::-webkit-scrollbar-thumb { background: var(--border); }
+
+    @media (max-width: 1280px) { .toc-panel { display: none; } }
+
+    /* ─── PROGRESS BAR ────────────── */
+    #progress-bar {
+      position: fixed; top: 0; left: 0; z-index: 1000;
+      height: 2px; width: 0%; background: var(--accent);
+      transition: width .1s linear, opacity .3s ease;
+      opacity: 0;
+    }
+    #progress-bar.loading { opacity: 1; }
+    #progress-bar.done    { width: 100% !important; opacity: 0; transition: opacity .4s ease .1s; }
+
+    /* ─── HEADING ANCHORS ─────────── */
+    .md h2 .anchor, .md h3 .anchor {
+      display: inline-block; margin-left: 8px;
+      color: var(--text-dim); opacity: 0;
+      font-size: .8em; text-decoration: none;
+      transition: opacity .15s;
+    }
+    .md h2:hover .anchor, .md h3:hover .anchor { opacity: 1; }
+    .md h2[id], .md h3[id] { scroll-margin-top: calc(var(--topbar-h) + 24px); }
+
     /* ─── SCROLLBAR ───────────────── */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -472,6 +538,9 @@
   </style>
 </head>
 <body>
+
+<!-- PROGRESS BAR -->
+<div id="progress-bar"></div>
 
 <!-- SEARCH MODAL -->
 <div class="search-overlay" id="searchOverlay">
@@ -491,6 +560,9 @@
     </div>
   </div>
 </div>
+
+<!-- MOBILE SIDEBAR BACKDROP -->
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
 <!-- TOP BAR -->
 <header class="topbar">
@@ -599,6 +671,12 @@
     </div>
   </main>
 
+  <!-- TOC PANEL -->
+  <aside class="toc-panel" id="toc-panel">
+    <div class="toc-title">On this page</div>
+    <ul class="toc-list" id="toc-list"></ul>
+  </aside>
+
 </div>
 
 <script>
@@ -618,11 +696,138 @@ const NAV = [
 // ─── State ──────────────────────────────────────────────────────────────────
 let currentPage = '';
 const cache = {};
+let fetchId = 0;
+let tocObserver = null;
+
+// ─── Progress bar ────────────────────────────────────────────────────────────
+const progressBar = document.getElementById('progress-bar');
+let progressTimer = null;
+function progressStart() {
+  clearTimeout(progressTimer);
+  progressBar.classList.remove('done');
+  progressBar.classList.add('loading');
+  progressBar.style.width = '0%';
+  // Animate to ~80% while waiting
+  let w = 0;
+  progressTimer = setInterval(() => {
+    w = w < 70 ? w + 12 : w < 85 ? w + 2 : w + 0.3;
+    progressBar.style.width = Math.min(w, 88) + '%';
+  }, 80);
+}
+function progressDone() {
+  clearTimeout(progressTimer);
+  progressBar.style.width = '100%';
+  progressBar.classList.add('done');
+  setTimeout(() => progressBar.classList.remove('loading', 'done'), 600);
+}
+
+// ─── Marked — initialize ONCE ────────────────────────────────────────────────
+(function initMarked() {
+  const renderer = new marked.Renderer();
+
+  // Code blocks with header + copy button
+  renderer.code = function(code, lang) {
+    const language = (lang || 'plaintext').trim();
+    let highlighted;
+    try {
+      highlighted = language && hljs.getLanguage(language)
+        ? hljs.highlight(code, { language }).value
+        : hljs.highlightAuto(code).value;
+    } catch (_) { highlighted = escapeHtml(code); }
+    const displayLang = language === 'plaintext' ? '' : language;
+    return `<div class="code-header"><span class="code-lang-tag">${displayLang}</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code class="hljs language-${language}">${highlighted}</code></pre>`;
+  };
+
+  // Headings with id + anchor link (h2 and h3)
+  renderer.heading = function(text, level) {
+    if (level === 2 || level === 3) {
+      const id = text.toLowerCase()
+        .replace(/<[^>]+>/g, '')   // strip any inline html
+        .replace(/[^\w\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-');
+      const anchor = `<a class="anchor" href="#${id}" aria-hidden="true">#</a>`;
+      return `<h${level} id="${id}">${text}${anchor}</h${level}>\n`;
+    }
+    return `<h${level}>${text}</h${level}>\n`;
+  };
+
+  // Internal doc links
+  renderer.link = function(href, title, text) {
+    if (href && href.startsWith('/docs?name=')) {
+      const name = href.split('=')[1];
+      return `<a href="#" onclick="navigate('${name}'); return false;" title="${title || ''}">${text}</a>`;
+    }
+    const external = href && (href.startsWith('http') || href.startsWith('//'));
+    const target = external ? ' target="_blank" rel="noopener"' : '';
+    return `<a href="${href || ''}"${title ? ` title="${title}"` : ''}${target}>${text}</a>`;
+  };
+
+  marked.setOptions({ gfm: true, breaks: false });
+  marked.use({ renderer });
+})();
+
+function renderMarkdown(md) { return marked.parse(md); }
+
+// ─── TOC ─────────────────────────────────────────────────────────────────────
+function buildToc(contentEl) {
+  const tocList = document.getElementById('toc-list');
+  const tocPanel = document.getElementById('toc-panel');
+  if (!tocList || !tocPanel) return;
+
+  // Kill previous observer
+  if (tocObserver) { tocObserver.disconnect(); tocObserver = null; }
+
+  const headings = Array.from(contentEl.querySelectorAll('h2, h3'))
+    .filter(h => h.id);
+
+  if (headings.length < 2) {
+    tocPanel.style.visibility = 'hidden';
+    return;
+  }
+  tocPanel.style.visibility = 'visible';
+
+  tocList.innerHTML = headings.map(h => {
+    const cls = h.tagName === 'H3' ? 'toc-item h3' : 'toc-item';
+    // Strip the anchor tag from display text
+    const label = h.textContent.replace(/#$/, '').trim();
+    return `<li class="${cls}" data-id="${h.id}"><a href="#${h.id}">${label}</a></li>`;
+  }).join('');
+
+  // Click — smooth scroll
+  tocList.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.getElementById(a.getAttribute('href').slice(1));
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+
+  // Scroll spy — IntersectionObserver
+  const tocItems = new Map();
+  tocList.querySelectorAll('.toc-item').forEach(li => tocItems.set(li.dataset.id, li));
+
+  const topbarH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--topbar-h')) || 52;
+
+  tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        tocItems.forEach(li => li.classList.remove('active'));
+        const li = tocItems.get(entry.target.id);
+        if (li) li.classList.add('active');
+      }
+    });
+  }, {
+    rootMargin: `-${topbarH + 8}px 0px -60% 0px`,
+    threshold: 0,
+  });
+
+  headings.forEach(h => tocObserver.observe(h));
+}
 
 // ─── Router ─────────────────────────────────────────────────────────────────
 function getPage() {
-  const params = new URLSearchParams(location.search);
-  return params.get('name') || 'introduction';
+  return new URLSearchParams(location.search).get('name') || 'introduction';
 }
 
 function navigate(page, push = true) {
@@ -634,6 +839,8 @@ function navigate(page, push = true) {
   updateBreadcrumb(page);
   updatePagination(page);
   closeMobile();
+  const info = NAV.find(n => n.page === page);
+  if (info) document.title = `${info.label} — moleculer-rs Docs`;
 }
 
 window.addEventListener('popstate', () => navigate(getPage(), false));
@@ -646,82 +853,38 @@ async function loadPage(page) {
   if (cache[page]) {
     el.innerHTML = cache[page];
     afterRender(el);
+    buildToc(el);
     window.scrollTo(0, 0);
     return;
   }
 
+  const thisId = ++fetchId;
+  progressStart();
   el.innerHTML = '<div class="loading">Loading…</div>';
 
   try {
-    const base = getBase();
-    const res = await fetch(`${base}content/${page}.md`);
-    if (!res.ok) throw new Error(res.status);
+    const res = await fetch(`${getBase()}content/${page}.md`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const md = await res.text();
+    if (fetchId !== thisId) return;
     const html = renderMarkdown(md);
     cache[page] = html;
     el.innerHTML = html;
     afterRender(el);
+    buildToc(el);
+    progressDone();
   } catch (e) {
-    el.innerHTML = `<div class="loading" style="color:var(--red)">Failed to load "${page}"</div>`;
+    if (fetchId !== thisId) return;
+    progressDone();
+    el.innerHTML = `<div class="loading" style="color:var(--red)">Failed to load "${page}" — ${e.message}</div>`;
   }
   window.scrollTo(0, 0);
 }
 
 function getBase() {
-  // Works both on localhost and GitHub Pages
   const path = location.pathname;
-  if (path.endsWith('/') ) return '';
-  if (path.endsWith('/index.html')) return '';
+  if (path.endsWith('/') || path.endsWith('/index.html')) return '';
   return path.substring(0, path.lastIndexOf('/') + 1);
-}
-
-// ─── Markdown renderer ───────────────────────────────────────────────────────
-function renderMarkdown(md) {
-  marked.setOptions({
-    gfm: true,
-    breaks: false,
-    highlight: null,  // we use our own post-processing
-  });
-
-  // Patch renderer for code blocks
-  const renderer = new marked.Renderer();
-
-  renderer.code = function(code, lang) {
-    const language = (lang || 'plaintext').trim();
-    let highlighted;
-    try {
-      if (language && hljs.getLanguage(language)) {
-        highlighted = hljs.highlight(code, { language }).value;
-      } else {
-        highlighted = hljs.highlightAuto(code).value;
-      }
-    } catch (e) {
-      highlighted = escapeHtml(code);
-    }
-
-    const displayLang = language === 'plaintext' ? '' : language;
-    return `
-      <div class="code-header">
-        <span class="code-lang-tag">${displayLang}</span>
-        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-      </div>
-      <pre><code class="hljs language-${language}">${highlighted}</code></pre>
-    `;
-  };
-
-  // Patch links to intercept internal doc links
-  renderer.link = function(href, title, text) {
-    if (href && href.startsWith('/docs?name=')) {
-      const name = href.split('=')[1];
-      return `<a href="#" onclick="navigate('${name}'); return false;" title="${title || ''}">${text}</a>`;
-    }
-    const external = href && (href.startsWith('http') || href.startsWith('//'));
-    const target = external ? ' target="_blank" rel="noopener"' : '';
-    return `<a href="${href || ''}"${title ? ` title="${title}"` : ''}${target}>${text}</a>`;
-  };
-
-  marked.use({ renderer });
-  return marked.parse(md);
 }
 
 function escapeHtml(s) {
@@ -729,24 +892,37 @@ function escapeHtml(s) {
 }
 
 function afterRender(el) {
-  // Internal doc links via query string
-  el.querySelectorAll('a[href]').forEach(a => {
-    const href = a.getAttribute('href');
-    if (href && href.startsWith('/docs?name=')) {
-      const name = href.split('=')[1];
-      a.href = '#';
-      a.addEventListener('click', e => { e.preventDefault(); navigate(name); });
-    }
+  // Intercept internal /docs?name= links not already handled by renderer.link
+  el.querySelectorAll('a[href^="/docs?name="]').forEach(a => {
+    const name = a.getAttribute('href').split('=')[1];
+    a.href = '#';
+    a.addEventListener('click', e => { e.preventDefault(); navigate(name); });
+  });
+  // Hash anchor links scroll into view correctly
+  el.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const id = a.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
   });
 }
 
-// ─── Copy code ──────────────────────────────────────────────────────────────
+// ─── Copy code ───────────────────────────────────────────────────────────────
 window.copyCode = function(btn) {
   const pre = btn.closest('.code-header').nextElementSibling;
   const text = pre ? pre.textContent : '';
   navigator.clipboard.writeText(text).then(() => {
     btn.textContent = 'Copied!';
     setTimeout(() => btn.textContent = 'Copy', 1800);
+  }).catch(() => {
+    const range = document.createRange();
+    range.selectNodeContents(pre);
+    const sel = window.getSelection();
+    sel.removeAllRanges(); sel.addRange(range);
+    btn.textContent = 'Selected!';
+    setTimeout(() => { btn.textContent = 'Copy'; sel.removeAllRanges(); }, 2000);
   });
 };
 
@@ -756,7 +932,6 @@ function updateSidebar(page) {
     el.classList.toggle('active', el.dataset.page === page);
   });
 }
-
 document.querySelectorAll('.sidebar-item[data-page]').forEach(el => {
   el.addEventListener('click', () => navigate(el.dataset.page));
 });
@@ -768,41 +943,34 @@ function updateBreadcrumb(page) {
   document.getElementById('breadcrumb').innerHTML =
     `<a href="../">Home</a>
      <span class="breadcrumb-sep">/</span>
-     <a href="?" onclick="navigate('introduction'); return false;">Docs</a>
+     <a href="?name=introduction" onclick="navigate('introduction'); return false;">Docs</a>
      <span class="breadcrumb-sep">/</span>
      <span>${info.label}</span>`;
 }
 
 // ─── Pagination ──────────────────────────────────────────────────────────────
 function updatePagination(page) {
-  const idx = NAV.findIndex(n => n.page === page);
+  const idx  = NAV.findIndex(n => n.page === page);
   const prev = idx > 0 ? NAV[idx - 1] : null;
   const next = idx < NAV.length - 1 ? NAV[idx + 1] : null;
-
   let html = '';
-  if (prev) html += `
-    <div class="page-nav" onclick="navigate('${prev.page}')">
-      <div class="page-nav-label">← Previous</div>
-      <div class="page-nav-title">${prev.icon} ${prev.label}</div>
-    </div>`;
+  if (prev) html += `<div class="page-nav" onclick="navigate('${prev.page}')"><div class="page-nav-label">← Previous</div><div class="page-nav-title">${prev.icon} ${prev.label}</div></div>`;
   else html += '<div style="flex:1"></div>';
-
-  if (next) html += `
-    <div class="page-nav page-nav-next" onclick="navigate('${next.page}')">
-      <div class="page-nav-label">Next →</div>
-      <div class="page-nav-title">${next.icon} ${next.label}</div>
-    </div>`;
-
+  if (next) html += `<div class="page-nav page-nav-next" onclick="navigate('${next.page}')"><div class="page-nav-label">Next →</div><div class="page-nav-title">${next.icon} ${next.label}</div></div>`;
   document.getElementById('pagination').innerHTML = html;
 }
 
-// ─── Mobile sidebar ──────────────────────────────────────────────────────────
+// ─── Mobile sidebar ───────────────────────────────────────────────────────────
+const sidebar  = document.getElementById('sidebar');
+const backdrop = document.getElementById('sidebarBackdrop');
 document.getElementById('mobileToggle').addEventListener('click', () => {
-  document.getElementById('sidebar').classList.toggle('open');
+  sidebar.classList.toggle('open');
+  backdrop.classList.toggle('visible');
 });
-
+backdrop.addEventListener('click', closeMobile);
 function closeMobile() {
-  document.getElementById('sidebar').classList.remove('open');
+  sidebar.classList.remove('open');
+  backdrop.classList.remove('visible');
 }
 
 // ─── Search ──────────────────────────────────────────────────────────────────
@@ -818,58 +986,40 @@ function openSearch() {
   searchInput.focus();
   focusedIdx = -1;
 }
-
 function closeSearch() {
   searchOverlay.classList.remove('open');
+  focusedIdx = -1;
 }
 
 document.getElementById('searchTrigger').addEventListener('click', openSearch);
 searchOverlay.addEventListener('click', e => { if (e.target === searchOverlay) closeSearch(); });
 
 document.addEventListener('keydown', e => {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
-  if (e.key === 'Escape' && searchOverlay.classList.contains('open')) closeSearch();
-
-  if (searchOverlay.classList.contains('open')) {
-    const items = searchResults.querySelectorAll('.search-result');
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      focusedIdx = Math.min(focusedIdx + 1, items.length - 1);
-      updateFocus(items);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      focusedIdx = Math.max(focusedIdx - 1, 0);
-      updateFocus(items);
-    } else if (e.key === 'Enter') {
-      if (focusedIdx >= 0 && items[focusedIdx]) items[focusedIdx].click();
-    }
-  }
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openSearch(); return; }
+  if (e.key === 'Escape' && searchOverlay.classList.contains('open')) { e.stopPropagation(); closeSearch(); return; }
+  if (!searchOverlay.classList.contains('open')) return;
+  const items = searchResults.querySelectorAll('.search-result');
+  if (e.key === 'ArrowDown') { e.preventDefault(); focusedIdx = Math.min(focusedIdx + 1, items.length - 1); updateFocus(items); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); focusedIdx = Math.max(focusedIdx - 1, -1); updateFocus(items); }
+  else if (e.key === 'Enter' && focusedIdx >= 0 && items[focusedIdx]) items[focusedIdx].click();
 });
 
 function updateFocus(items) {
   items.forEach((el, i) => el.classList.toggle('focused', i === focusedIdx));
-  if (items[focusedIdx]) items[focusedIdx].scrollIntoView({ block: 'nearest' });
+  if (focusedIdx >= 0 && items[focusedIdx]) items[focusedIdx].scrollIntoView({ block: 'nearest' });
 }
 
-searchInput.addEventListener('input', () => {
-  focusedIdx = -1;
-  renderSearchResults(searchInput.value);
-});
+searchInput.addEventListener('input', () => { focusedIdx = -1; renderSearchResults(searchInput.value); });
 
 function renderSearchResults(query) {
   const q = query.toLowerCase().trim();
-  const filtered = q
-    ? NAV.filter(n =>
-        n.label.toLowerCase().includes(q) ||
-        n.section.toLowerCase().includes(q) ||
-        n.page.toLowerCase().includes(q))
-    : NAV;
-
+  const filtered = q ? NAV.filter(n =>
+    n.label.toLowerCase().includes(q) || n.section.toLowerCase().includes(q) || n.page.includes(q)
+  ) : NAV;
   if (!filtered.length) {
-    searchResults.innerHTML = `<div class="search-empty">No results for "${query}"</div>`;
+    searchResults.innerHTML = `<div class="search-empty">No results for "${escapeHtml(query)}"</div>`;
     return;
   }
-
   searchResults.innerHTML = filtered.map(n => `
     <div class="search-result" data-page="${n.page}">
       <span class="search-result-icon">${n.icon}</span>
@@ -878,14 +1028,9 @@ function renderSearchResults(query) {
         <div class="search-result-sub">${n.section}</div>
       </div>
       <span class="search-result-arrow">↵</span>
-    </div>
-  `).join('');
-
+    </div>`).join('');
   searchResults.querySelectorAll('.search-result').forEach(el => {
-    el.addEventListener('click', () => {
-      navigate(el.dataset.page);
-      closeSearch();
-    });
+    el.addEventListener('click', () => { navigate(el.dataset.page); closeSearch(); });
   });
 }
 

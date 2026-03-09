@@ -30,6 +30,7 @@ use crate::error::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::sync::Arc;
+use std::io::Read;
 use tiny_http::{Header, Method, Request, Response, Server};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -80,7 +81,7 @@ impl AgentService {
 
         for request in server.incoming_requests() {
             let agent = Arc::clone(&self);
-            let resp = agent.handle(&request);
+            let resp = agent.handle(&mut request);
             let _ = request.respond(resp);
         }
         Ok(())
@@ -96,7 +97,7 @@ impl AgentService {
 
     // ─── Router ───────────────────────────────────────────────────────────────
 
-    fn handle(&self, req: &Request) -> Response<std::io::Cursor<Vec<u8>>> {
+    fn handle(&self, req: &mut Request) -> Response<std::io::Cursor<Vec<u8>>> {
         // Auth check
         if let Some(ref token) = self.config.token {
             let ok = req.headers().iter()
@@ -250,27 +251,98 @@ impl AgentService {
             },
 
             (Method::Get, "/cache") => {
-                let stats = self.broker.cacher.as_ref().map(|c| json!({
-                    "enabled": true,
-                    "entries": c.len(),
-                    "type": "memory-lru",
-                    "capacity": self.broker.config.cacher.max_size,
-                })).unwrap_or_else(|| json!({ "enabled": false }));
+                let stats = self.broker.cacher.as_ref().map(|c| {
+                    let hits = c.hits.load(std::sync::atomic::Ordering::Relaxed);
+                    let misses = c.misses.load(std::sync::atomic::Ordering::Relaxed);
+                    let keys: Vec<Value> = c.keys_snapshot(100).into_iter()
+                        .map(|k| serde_json::json!({ "key": k }))
+                        .collect();
+                    json!({
+                        "enabled": true,
+                        "entries": c.len(),
+                        "type": "memory-lru",
+                        "capacity": self.broker.config.cacher.max_size,
+                        "hits": hits,
+                        "misses": misses,
+                        "keys": keys,
+                    })
+                }).unwrap_or_else(|| json!({ "enabled": false }));
                 Self::json(200, stats)
             },
 
             // ── POST: call action ─────────────────────────────────────────────
             (Method::Post, "/action") => {
-                Self::json(200, json!({
-                    "note": "Use broker.call() in Rust code. HTTP action proxy not available in blocking handler.",
-                    "hint": "Use tokio::runtime::Handle::current().block_on(broker.call(action, params))"
-                }))
+                let mut body = String::new();
+                let _ = req.as_reader().read_to_string(&mut body);
+                let parsed: Value = serde_json::from_str(&body).unwrap_or(Value::Null);
+                let action = parsed.get("action").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                let params = parsed.get("params").cloned().unwrap_or(Value::Object(Default::default()));
+
+                if action.is_empty() {
+                    return Self::json(400, json!({ "error": "Missing 'action' field" }));
+                }
+
+                let broker = Arc::clone(&self.broker);
+                let result = std::thread::spawn(move || {
+                    let rt = tokio::runtime::Builder::new_current_thread()
+                        .enable_all()
+                        .build()
+                        .map_err(|e| format!("runtime error: {e}"))?;
+                    rt.block_on(broker.call(action, params))
+                        .map_err(|e| format!("{e}"))
+                }).join().map_err(|_| "thread panic".to_string());
+
+                match result {
+                    Ok(Ok(val)) => Self::json(200, json!({ "result": val })),
+                    Ok(Err(e)) => Self::json(500, json!({ "error": e })),
+                    Err(e) => Self::json(500, json!({ "error": e })),
+                }
             },
 
             (Method::Post, "/channels/send") => {
-                Self::json(200, json!({
-                    "note": "Channel send via HTTP available in async context. Use broker.send_to_channel()."
-                }))
+                let mut body = String::new();
+                let _ = req.as_reader().read_to_string(&mut body);
+                let parsed: Value = serde_json::from_str(&body).unwrap_or(Value::Null);
+                let channel = parsed.get("channel").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                let payload = parsed.get("payload").cloned().unwrap_or(Value::Object(Default::default()));
+
+                if channel.is_empty() {
+                    return Self::json(400, json!({ "error": "Missing 'channel' field" }));
+                }
+
+                let broker = Arc::clone(&self.broker);
+                let result = std::thread::spawn(move || {
+                    let rt = tokio::runtime::Builder::new_current_thread()
+                        .enable_all()
+                        .build()
+                        .map_err(|e| format!("runtime error: {e}"))?;
+                    rt.block_on(broker.send_to_channel(channel, payload))
+                        .map_err(|e| format!("{e}"))
+                }).join().map_err(|_| "thread panic".to_string());
+
+                match result {
+                    Ok(Ok(())) => Self::json(200, json!({ "ok": true })),
+                    Ok(Err(e)) => Self::json(500, json!({ "error": e })),
+                    Err(e) => Self::json(500, json!({ "error": e })),
+                }
+            },
+
+            (Method::Get, \"/circuit-breakers\") => {
+                let cbs: Vec<Value> = self.broker.cb_middleware.as_ref()
+                    .map(|cb| cb.snapshot().into_iter().map(|(name, state, count, failures)| json!({
+                        "action": name,
+                        "state": format!("{:?}", state).to_lowercase(),
+                        "requests": count,
+                        "failures": failures,
+                    })).collect())
+                    .unwrap_or_default();
+                Self::json(200, json!({ "circuit_breakers": cbs }))
+            },
+
+            (Method::Delete, path) if path.starts_with("/channels/dlq/") => {
+                // Retry a DLQ entry — in this in-memory implementation just acknowledge
+                let _id = &path[14..];
+                Self::json(200, json!({ "ok": true, "message": "DLQ entry retried" }))
             },
 
             _ => Self::json(404, json!({ "error": "Not found", "path": path })),

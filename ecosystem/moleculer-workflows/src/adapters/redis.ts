@@ -8,8 +8,8 @@
 
 import _ from "lodash";
 import { Cluster, ClusterOptions, Redis as RedisClient, RedisOptions } from "ioredis";
-import { Serializers, ServiceBroker, Logger, Errors } from "moleculer";
-import { Utils } from "moleculer";
+import { Serializers, ServiceBroker, Logger, Errors } from "../moleculer-compat.ts";
+import { Utils } from "../moleculer-compat.ts";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 

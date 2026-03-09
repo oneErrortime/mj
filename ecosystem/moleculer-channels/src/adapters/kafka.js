@@ -8,7 +8,7 @@
 
 const BaseAdapter = require("./base");
 const _ = require("lodash");
-const { MoleculerError, MoleculerRetryableError } = require("moleculer").Errors;
+const { Errors: { MoleculerError, MoleculerRetryableError } } = require("moleculer-rs-client/src/compat");
 const C = require("../constants");
 const { INVALID_MESSAGE_SERIALIZATION_ERROR_CODE } = require("../constants");
 /** Name of the partition where an error occurred while processing the message */

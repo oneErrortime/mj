@@ -1,11 +1,12 @@
 [package]
 name = "moleculer-rs"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Moleculer microservices framework — full-featured Rust port"
 license = "MIT"
 repository = "https://github.com/oneErrortime/mj"
 keywords = ["microservices", "moleculer", "framework", "distributed", "channels"]
+readme = "README.md"
 
 [lib]
 name = "moleculer"
@@ -23,25 +24,75 @@ path = "examples/basic.rs"
 name = "channels"
 path = "examples/channels.rs"
 
+[[example]]
+name = "database"
+path = "examples/database.rs"
+
+[[example]]
+name = "transporter"
+path = "examples/transporter.rs"
+
 [features]
-default = ["laboratory", "channels"]
-laboratory = []
-channels   = []
+default = ["laboratory", "channels", "database"]
+laboratory  = []
+channels    = []
+database    = []
+# Optional transport backends — enable as needed
+nats        = ["dep:async-nats"]
+redis       = ["dep:redis"]
+amqp        = ["dep:lapin"]
+kafka       = ["dep:rdkafka"]
+# Serializers
+msgpack     = ["dep:rmp-serde"]
+# Tracing exporters
+jaeger      = []
+zipkin      = []
+# Full bundle
+full        = ["nats", "redis", "amqp", "msgpack", "jaeger", "zipkin", "laboratory", "channels", "database"]
 
 [dependencies]
-tokio        = { version = "=1.38.0", features = ["full"] }
-async-trait  = "0.1"
-serde        = { version = "1", features = ["derive"] }
-serde_json   = "1"
-uuid         = { version = "=1.6.1", features = ["v4"] }
-log          = "0.4"
-env_logger   = "=0.10.2"
-thiserror    = "=1.0.61"
-dashmap      = "=5.5.3"
-chrono       = { version = "=0.4.38", features = ["serde"] }
-rand         = "=0.8.5"
-tiny_http    = "=0.12.0"
-lru          = "=0.12.3"
+# ── async runtime ─────────────────────────────────────────────────
+tokio         = { version = "=1.38.0", features = ["full"] }
+async-trait   = "0.1"
+futures       = "0.3"
+
+# ── serialization ─────────────────────────────────────────────────
+serde         = { version = "1", features = ["derive"] }
+serde_json    = "1"
+rmp-serde     = { version = "1.3", optional = true }   # MessagePack
+
+# ── ids / time ────────────────────────────────────────────────────
+uuid          = { version = "=1.6.1", features = ["v4"] }
+chrono        = { version = "=0.4.38", features = ["serde"] }
+
+# ── logging ───────────────────────────────────────────────────────
+log           = "0.4"
+env_logger    = "=0.10.2"
+
+# ── error handling ────────────────────────────────────────────────
+thiserror     = "=1.0.61"
+anyhow        = "1"
+
+# ── concurrency / data structures ────────────────────────────────
+dashmap       = "=5.5.3"
+rand          = "=0.8.5"
+lru           = "=0.12.3"
+parking_lot   = "0.12"
+crossbeam     = "0.8"
+tokio-util    = { version = "0.7", features = ["codec"] }
+bytes         = "1"
+
+# ── networking ────────────────────────────────────────────────────
+tiny_http     = "=0.12.0"
+
+# ── optional transports ───────────────────────────────────────────
+async-nats    = { version = "0.33", optional = true }
+redis         = { version = "0.25", features = ["tokio-comp", "streams", "connection-manager"], optional = true }
+lapin         = { version = "2", optional = true }
+rdkafka       = { version = "0.36", features = ["cmake-build"], optional = true }
+
+# ── hashing (shard strategy, cacher keys) ─────────────────────────
+fnv           = "1"
 
 [dev-dependencies]
 tokio-test = "0.4"
