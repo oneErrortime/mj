@@ -230,3 +230,16 @@ export interface ServiceBroker {
     create(broker: ServiceBroker, endpoint: unknown, params: unknown, opts: unknown): Context;
   };
 }
+
+// ─── Concrete ServiceBroker (re-exported from moleculer-rs-client) ───────────
+// Uses Function constructor to get a require that works in both CJS and ESM
+// compiled output without import.meta, which is not available under --module commonjs.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const _rsCompat: any = new Function('require', 'return require("moleculer-rs-client/src/compat")')(
+  // In CJS the module-scoped require is available; in ESM we fall back to
+  // Node's global module loader through the Function constructor.
+  // eslint-disable-next-line no-undef, @typescript-eslint/no-explicit-any
+  typeof require !== "undefined" ? require : (module as any).createRequire(__filename)
+);
+export const ServiceBrokerClass: new (opts?: Record<string, unknown>) => ServiceBroker =
+  _rsCompat.ServiceBroker;

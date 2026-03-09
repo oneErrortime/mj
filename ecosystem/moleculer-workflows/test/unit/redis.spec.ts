@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ServiceBroker } from "moleculer";
+import { ServiceBrokerClass as ServiceBroker } from "../../src/moleculer-compat.ts";
 import RedisAdapter from "../../src/adapters/redis.ts";
 import * as C from "../../src/constants.ts";
 

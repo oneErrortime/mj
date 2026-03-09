@@ -1,6 +1,6 @@
 "use strict";
 
-const { ServiceBroker, Context } = require("moleculer");
+const { ServiceBroker, Context } = require("moleculer-rs-client/src/compat");
 const DbService = require("../..").Service;
 
 describe("Test scoping", () => {

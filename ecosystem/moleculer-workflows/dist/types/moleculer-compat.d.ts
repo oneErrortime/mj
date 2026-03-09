@@ -162,4 +162,5 @@ export interface ServiceBroker {
         create(broker: ServiceBroker, endpoint: unknown, params: unknown, opts: unknown): Context;
     };
 }
+export declare const ServiceBrokerClass: new (opts?: Record<string, unknown>) => ServiceBroker;
 //# sourceMappingURL=moleculer-compat.d.ts.map
