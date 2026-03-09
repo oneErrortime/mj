@@ -205,12 +205,20 @@
       margin: 10px 18px;
     }
 
+    /* mobile sidebar backdrop */
+    .sidebar-backdrop {
+      display: none; position: fixed; inset: 0; z-index: 240;
+      background: rgba(0,0,0,.55);
+    }
+    .sidebar-backdrop.visible { display: block; }
+
     @media (max-width: 768px) {
       .sidebar {
         position: fixed; top: var(--topbar-h); left: 0; z-index: 250;
         transform: translateX(-100%);
+        transition: transform .22s cubic-bezier(.4,0,.2,1);
       }
-      .sidebar.open { transform: translateX(0); }
+      .sidebar.open { transform: translateX(0); box-shadow: 4px 0 32px rgba(0,0,0,.4); }
     }
 
     /* ─── MAIN CONTENT ────────────── */
@@ -492,6 +500,9 @@
   </div>
 </div>
 
+<!-- MOBILE SIDEBAR BACKDROP -->
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
 <!-- TOP BAR -->
 <header class="topbar">
   <button class="mobile-toggle" id="mobileToggle">☰</button>
@@ -618,6 +629,51 @@ const NAV = [
 // ─── State ──────────────────────────────────────────────────────────────────
 let currentPage = '';
 const cache = {};
+let fetchId = 0;  // Bug 8 fix: race-condition guard
+
+// ─── Marked — FIX Bug 1: initialize renderer ONCE, not per render call ───────
+(function initMarked() {
+  const renderer = new marked.Renderer();
+
+  renderer.code = function(code, lang) {
+    const language = (lang || 'plaintext').trim();
+    let highlighted;
+    try {
+      if (language && hljs.getLanguage(language)) {
+        highlighted = hljs.highlight(code, { language }).value;
+      } else {
+        highlighted = hljs.highlightAuto(code).value;
+      }
+    } catch (e) {
+      highlighted = escapeHtml(code);
+    }
+    const displayLang = language === 'plaintext' ? '' : language;
+    return `
+      <div class="code-header">
+        <span class="code-lang-tag">${displayLang}</span>
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><code class="hljs language-${language}">${highlighted}</code></pre>
+    `;
+  };
+
+  renderer.link = function(href, title, text) {
+    if (href && href.startsWith('/docs?name=')) {
+      const name = href.split('=')[1];
+      return `<a href="#" onclick="navigate('${name}'); return false;" title="${title || ''}">${text}</a>`;
+    }
+    const external = href && (href.startsWith('http') || href.startsWith('//'));
+    const target = external ? ' target="_blank" rel="noopener"' : '';
+    return `<a href="${href || ''}"${title ? ` title="${title}"` : ''}${target}>${text}</a>`;
+  };
+
+  marked.setOptions({ gfm: true, breaks: false });
+  marked.use({ renderer });
+})();
+
+function renderMarkdown(md) {
+  return marked.parse(md);
+}
 
 // ─── Router ─────────────────────────────────────────────────────────────────
 function getPage() {
@@ -634,6 +690,9 @@ function navigate(page, push = true) {
   updateBreadcrumb(page);
   updatePagination(page);
   closeMobile();
+  // FIX Bug 3: update browser tab title
+  const info = NAV.find(n => n.page === page);
+  if (info) document.title = `${info.label} — moleculer-rs Docs`;
 }
 
 window.addEventListener('popstate', () => navigate(getPage(), false));
@@ -650,6 +709,8 @@ async function loadPage(page) {
     return;
   }
 
+  // FIX Bug 8: fetch race guard — only apply result if still the current page
+  const thisId = ++fetchId;
   el.innerHTML = '<div class="loading">Loading…</div>';
 
   try {
@@ -657,71 +718,24 @@ async function loadPage(page) {
     const res = await fetch(`${base}content/${page}.md`);
     if (!res.ok) throw new Error(res.status);
     const md = await res.text();
+    if (fetchId !== thisId) return; // stale fetch — a newer page was requested
     const html = renderMarkdown(md);
     cache[page] = html;
     el.innerHTML = html;
     afterRender(el);
   } catch (e) {
+    if (fetchId !== thisId) return;
     el.innerHTML = `<div class="loading" style="color:var(--red)">Failed to load "${page}"</div>`;
   }
   window.scrollTo(0, 0);
 }
 
 function getBase() {
-  // Works both on localhost and GitHub Pages
+  // Works both on localhost and GitHub Pages subdirectories
   const path = location.pathname;
   if (path.endsWith('/') ) return '';
   if (path.endsWith('/index.html')) return '';
   return path.substring(0, path.lastIndexOf('/') + 1);
-}
-
-// ─── Markdown renderer ───────────────────────────────────────────────────────
-function renderMarkdown(md) {
-  marked.setOptions({
-    gfm: true,
-    breaks: false,
-    highlight: null,  // we use our own post-processing
-  });
-
-  // Patch renderer for code blocks
-  const renderer = new marked.Renderer();
-
-  renderer.code = function(code, lang) {
-    const language = (lang || 'plaintext').trim();
-    let highlighted;
-    try {
-      if (language && hljs.getLanguage(language)) {
-        highlighted = hljs.highlight(code, { language }).value;
-      } else {
-        highlighted = hljs.highlightAuto(code).value;
-      }
-    } catch (e) {
-      highlighted = escapeHtml(code);
-    }
-
-    const displayLang = language === 'plaintext' ? '' : language;
-    return `
-      <div class="code-header">
-        <span class="code-lang-tag">${displayLang}</span>
-        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-      </div>
-      <pre><code class="hljs language-${language}">${highlighted}</code></pre>
-    `;
-  };
-
-  // Patch links to intercept internal doc links
-  renderer.link = function(href, title, text) {
-    if (href && href.startsWith('/docs?name=')) {
-      const name = href.split('=')[1];
-      return `<a href="#" onclick="navigate('${name}'); return false;" title="${title || ''}">${text}</a>`;
-    }
-    const external = href && (href.startsWith('http') || href.startsWith('//'));
-    const target = external ? ' target="_blank" rel="noopener"' : '';
-    return `<a href="${href || ''}"${title ? ` title="${title}"` : ''}${target}>${text}</a>`;
-  };
-
-  marked.use({ renderer });
-  return marked.parse(md);
 }
 
 function escapeHtml(s) {
@@ -729,7 +743,7 @@ function escapeHtml(s) {
 }
 
 function afterRender(el) {
-  // Internal doc links via query string
+  // Patch any internal doc links not already handled by renderer.link
   el.querySelectorAll('a[href]').forEach(a => {
     const href = a.getAttribute('href');
     if (href && href.startsWith('/docs?name=')) {
@@ -740,13 +754,22 @@ function afterRender(el) {
   });
 }
 
-// ─── Copy code ──────────────────────────────────────────────────────────────
+// ─── Copy code — FIX Bug 4: handle clipboard permission denial ───────────────
 window.copyCode = function(btn) {
   const pre = btn.closest('.code-header').nextElementSibling;
   const text = pre ? pre.textContent : '';
   navigator.clipboard.writeText(text).then(() => {
     btn.textContent = 'Copied!';
     setTimeout(() => btn.textContent = 'Copy', 1800);
+  }).catch(() => {
+    // Fallback: select the text
+    const range = document.createRange();
+    range.selectNodeContents(pre);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    btn.textContent = 'Selected!';
+    setTimeout(() => { btn.textContent = 'Copy'; sel.removeAllRanges(); }, 2000);
   });
 };
 
@@ -761,14 +784,14 @@ document.querySelectorAll('.sidebar-item[data-page]').forEach(el => {
   el.addEventListener('click', () => navigate(el.dataset.page));
 });
 
-// ─── Breadcrumb ──────────────────────────────────────────────────────────────
+// ─── Breadcrumb — FIX Bug 5: use explicit ?name=introduction ─────────────────
 function updateBreadcrumb(page) {
   const info = NAV.find(n => n.page === page);
   if (!info) return;
   document.getElementById('breadcrumb').innerHTML =
     `<a href="../">Home</a>
      <span class="breadcrumb-sep">/</span>
-     <a href="?" onclick="navigate('introduction'); return false;">Docs</a>
+     <a href="?name=introduction" onclick="navigate('introduction'); return false;">Docs</a>
      <span class="breadcrumb-sep">/</span>
      <span>${info.label}</span>`;
 }
@@ -796,13 +819,20 @@ function updatePagination(page) {
   document.getElementById('pagination').innerHTML = html;
 }
 
-// ─── Mobile sidebar ──────────────────────────────────────────────────────────
+// ─── Mobile sidebar — FIX Bug 2: backdrop + close on outside tap ─────────────
+const sidebar  = document.getElementById('sidebar');
+const backdrop = document.getElementById('sidebarBackdrop');
+
 document.getElementById('mobileToggle').addEventListener('click', () => {
-  document.getElementById('sidebar').classList.toggle('open');
+  sidebar.classList.toggle('open');
+  backdrop.classList.toggle('visible');
 });
 
+backdrop.addEventListener('click', closeMobile);
+
 function closeMobile() {
-  document.getElementById('sidebar').classList.remove('open');
+  sidebar.classList.remove('open');
+  backdrop.classList.remove('visible');
 }
 
 // ─── Search ──────────────────────────────────────────────────────────────────
@@ -821,6 +851,7 @@ function openSearch() {
 
 function closeSearch() {
   searchOverlay.classList.remove('open');
+  focusedIdx = -1;
 }
 
 document.getElementById('searchTrigger').addEventListener('click', openSearch);
@@ -828,7 +859,7 @@ searchOverlay.addEventListener('click', e => { if (e.target === searchOverlay) c
 
 document.addEventListener('keydown', e => {
   if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
-  if (e.key === 'Escape' && searchOverlay.classList.contains('open')) closeSearch();
+  if (e.key === 'Escape' && searchOverlay.classList.contains('open')) { e.stopPropagation(); closeSearch(); }
 
   if (searchOverlay.classList.contains('open')) {
     const items = searchResults.querySelectorAll('.search-result');
@@ -838,7 +869,8 @@ document.addEventListener('keydown', e => {
       updateFocus(items);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      focusedIdx = Math.max(focusedIdx - 1, 0);
+      // FIX Bug 6: allow returning to unfocused state (-1)
+      focusedIdx = Math.max(focusedIdx - 1, -1);
       updateFocus(items);
     } else if (e.key === 'Enter') {
       if (focusedIdx >= 0 && items[focusedIdx]) items[focusedIdx].click();
@@ -848,7 +880,7 @@ document.addEventListener('keydown', e => {
 
 function updateFocus(items) {
   items.forEach((el, i) => el.classList.toggle('focused', i === focusedIdx));
-  if (items[focusedIdx]) items[focusedIdx].scrollIntoView({ block: 'nearest' });
+  if (focusedIdx >= 0 && items[focusedIdx]) items[focusedIdx].scrollIntoView({ block: 'nearest' });
 }
 
 searchInput.addEventListener('input', () => {
@@ -866,7 +898,7 @@ function renderSearchResults(query) {
     : NAV;
 
   if (!filtered.length) {
-    searchResults.innerHTML = `<div class="search-empty">No results for "${query}"</div>`;
+    searchResults.innerHTML = `<div class="search-empty">No results for "${escapeHtml(query)}"</div>`;
     return;
   }
 
