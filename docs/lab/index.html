@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>moleculer-rs Laboratory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #080810;
+      --bg2:      #0d0d1a;
+      --bg3:      #111124;
+      --bg4:      #161630;
+      --border:   #1e1e38;
+      --border2:  #252545;
+      --rust:     #f97316;
+      --rust-dim: rgba(249,115,22,.12);
+      --cyan:     #22d3ee;
+      --cyan-dim: rgba(34,211,238,.08);
+      --green:    #4ade80;
+      --red:      #f87171;
+      --yellow:   #fbbf24;
+      --purple:   #c084fc;
+      --text:     #e2e2f0;
+      --text-dim: #6b6b88;
+      --text-mid: #a0a0bf;
+      --mono:     'JetBrains Mono', monospace;
+      --sans:     'DM Sans', sans-serif;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      display: flex; align-items: center; gap: 0;
+      height: 48px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      z-index: 100;
+    }
+    .topbar-logo {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 20px;
+      font-family: var(--mono); font-size: 13px; font-weight: 600;
+      color: var(--text); text-decoration: none;
+      border-right: 1px solid var(--border);
+      height: 100%;
+    }
+    .topbar-logo em { color: var(--rust); font-style: normal; }
+
+    .topbar-center {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 16px; flex: 1;
+    }
+    .endpoint-input {
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text); font-family: var(--mono); font-size: 12px;
+      padding: 6px 12px; border-radius: 6px; width: 260px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .endpoint-input:focus { border-color: var(--rust); }
+    .endpoint-input::placeholder { color: var(--text-dim); }
+
+    .btn-connect {
+      background: var(--rust); color: #000;
+      border: none; border-radius: 6px;
+      font-family: var(--mono); font-size: 11px; font-weight: 700;
+      padding: 6px 14px; cursor: pointer;
+      transition: background .2s;
+    }
+    .btn-connect:hover { background: #fb923c; }
+    .btn-connect.connected { background: var(--green); }
+    .btn-connect.connecting { background: var(--yellow); }
+
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--text-dim);
+      transition: background .3s;
+    }
+    .status-dot.online { background: var(--green); animation: pulse 2s infinite; }
+    .status-dot.error  { background: var(--red); }
+
+    @keyframes pulse {
+      0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(74,222,128,.4); }
+      50% { opacity: .8; box-shadow: 0 0 0 4px rgba(74,222,128,0); }
+    }
+
+    .topbar-right {
+      display: flex; align-items: center; gap: 12px;
+      padding: 0 16px;
+      border-left: 1px solid var(--border); height: 100%;
+    }
+    .node-id {
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+    }
+    .node-id span { color: var(--cyan); }
+
+    .btn-refresh {
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text-mid); border-radius: 5px;
+      padding: 5px 10px; cursor: pointer; font-size: 12px;
+      transition: all .2s;
+    }
+    .btn-refresh:hover { background: var(--bg4); color: var(--text); }
+
+    .auto-refresh-label {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; color: var(--text-dim); cursor: pointer;
+    }
+    .auto-refresh-label input { accent-color: var(--rust); }
+
+    /* ── Layout ── */
+    .layout {
+      display: flex; flex: 1; overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 200px; flex-shrink: 0;
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow-y: auto;
+    }
+    .sidebar-section {
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-title {
+      font-family: var(--mono); font-size: 9px; font-weight: 600;
+      color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px;
+      padding: 8px 16px 4px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 16px; cursor: pointer;
+      color: var(--text-mid); font-size: 12px; font-weight: 500;
+      transition: all .15s; text-decoration: none;
+      border-left: 2px solid transparent;
+    }
+    .nav-item:hover { background: var(--bg3); color: var(--text); }
+    .nav-item.active {
+      background: var(--rust-dim); color: var(--rust);
+      border-left-color: var(--rust);
+    }
+    .nav-item .icon { font-size: 14px; width: 16px; text-align: center; }
+    .nav-badge {
+      margin-left: auto; background: var(--bg4);
+      color: var(--text-dim); font-family: var(--mono);
+      font-size: 9px; padding: 1px 6px; border-radius: 10px;
+    }
+    .nav-badge.red { background: rgba(248,113,113,.15); color: var(--red); }
+    .nav-badge.green { background: rgba(74,222,128,.1); color: var(--green); }
+
+    /* ── Main content ── */
+    .main {
+      flex: 1; overflow: auto; position: relative;
+    }
+
+    /* ── Panel ── */
+    .panel {
+      display: none; flex-direction: column; height: 100%;
+    }
+    .panel.active { display: flex; }
+
+    .panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .panel-title {
+      font-family: var(--mono); font-size: 14px; font-weight: 600;
+      color: var(--text);
+    }
+    .panel-title small { color: var(--text-dim); font-weight: 400; font-size: 11px; margin-left: 8px; }
+
+    .panel-body { flex: 1; overflow: auto; padding: 20px 24px; }
+    .panel-body.no-pad { padding: 0; }
+
+    /* ── Overview cards ── */
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px; margin-bottom: 24px;
+    }
+    .metric-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px;
+      transition: border-color .2s;
+    }
+    .metric-card:hover { border-color: var(--border2); }
+    .metric-card-label {
+      font-size: 11px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 1px;
+      font-family: var(--mono); margin-bottom: 8px;
+    }
+    .metric-card-value {
+      font-family: var(--mono); font-size: 26px; font-weight: 700;
+      color: var(--text); line-height: 1;
+    }
+    .metric-card-value.rust  { color: var(--rust); }
+    .metric-card-value.cyan  { color: var(--cyan); }
+    .metric-card-value.green { color: var(--green); }
+    .metric-card-value.red   { color: var(--red); }
+    .metric-card-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+    /* ── Table ── */
+    .data-table {
+      width: 100%; border-collapse: collapse;
+    }
+    .data-table th {
+      text-align: left; padding: 8px 14px;
+      font-family: var(--mono); font-size: 10px; font-weight: 600;
+      color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;
+      background: var(--bg2); border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .data-table td {
+      padding: 9px 14px; font-size: 12px;
+      border-bottom: 1px solid rgba(30,30,56,.5);
+      vertical-align: middle;
+    }
+    .data-table tr:hover td { background: var(--bg3); }
+    .mono { font-family: var(--mono); }
+
+    /* ── Tags ── */
+    .tag {
+      display: inline-flex; align-items: center;
+      font-family: var(--mono); font-size: 10px; font-weight: 600;
+      padding: 2px 7px; border-radius: 4px;
+    }
+    .tag-green  { background: rgba(74,222,128,.1); color: var(--green); border: 1px solid rgba(74,222,128,.2); }
+    .tag-red    { background: rgba(248,113,113,.1); color: var(--red); border: 1px solid rgba(248,113,113,.2); }
+    .tag-yellow { background: rgba(251,191,36,.1); color: var(--yellow); border: 1px solid rgba(251,191,36,.2); }
+    .tag-cyan   { background: rgba(34,211,238,.1); color: var(--cyan); border: 1px solid rgba(34,211,238,.2); }
+    .tag-rust   { background: var(--rust-dim); color: var(--rust); border: 1px solid rgba(249,115,22,.2); }
+    .tag-purple { background: rgba(192,132,252,.1); color: var(--purple); border: 1px solid rgba(192,132,252,.2); }
+
+    /* ── Topology SVG ── */
+    #topology-svg {
+      width: 100%; height: 100%; min-height: 480px;
+      background: var(--bg2);
+    }
+    .topo-wrap { flex: 1; position: relative; overflow: hidden; }
+    .topo-legend {
+      position: absolute; bottom: 16px; right: 16px;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 16px;
+      font-size: 11px; color: var(--text-dim);
+    }
+    .topo-legend div { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .topo-legend div:last-child { margin-bottom: 0; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    /* ── Log stream ── */
+    .log-stream {
+      font-family: var(--mono); font-size: 11px; line-height: 1.7;
+      padding: 16px 20px;
+      background: var(--bg);
+      flex: 1; overflow-y: auto;
+    }
+    .log-line { display: flex; gap: 12px; }
+    .log-ts  { color: var(--text-dim); flex-shrink: 0; }
+    .log-lvl { flex-shrink: 0; width: 40px; }
+    .log-svc { color: var(--cyan); flex-shrink: 0; min-width: 80px; }
+    .log-msg { color: var(--text-mid); }
+    .log-lvl.info  { color: var(--green); }
+    .log-lvl.warn  { color: var(--yellow); }
+    .log-lvl.error { color: var(--red); }
+    .log-lvl.debug { color: var(--text-dim); }
+
+    /* ── Trace viewer ── */
+    .trace-item {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; margin-bottom: 8px; overflow: hidden;
+    }
+    .trace-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px; cursor: pointer;
+      transition: background .15s;
+    }
+    .trace-header:hover { background: var(--bg3); }
+    .trace-id { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+    .trace-name { font-family: var(--mono); font-size: 13px; color: var(--cyan); }
+    .trace-dur  { font-family: var(--mono); font-size: 11px; color: var(--rust); margin-left: auto; }
+    .trace-spans-wrap { padding: 0 14px 12px; display: none; }
+    .trace-spans-wrap.open { display: block; }
+    .span-row {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 4px; font-size: 11px;
+    }
+    .span-indent { flex-shrink: 0; color: var(--border2); }
+    .span-name { font-family: var(--mono); color: var(--text); min-width: 160px; }
+    .span-bar-wrap { flex: 1; height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+    .span-bar { height: 100%; border-radius: 4px; background: var(--cyan); opacity: .7; }
+    .span-dur { font-family: var(--mono); color: var(--text-dim); font-size: 10px; flex-shrink: 0; }
+
+    /* ── Channels ── */
+    .channel-row {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; margin-bottom: 8px; padding: 14px 16px;
+    }
+    .channel-name { font-family: var(--mono); font-size: 13px; color: var(--cyan); margin-bottom: 8px; }
+    .channel-stats {
+      display: flex; gap: 20px; font-size: 11px;
+    }
+    .ch-stat { display: flex; flex-direction: column; gap: 2px; }
+    .ch-stat-label { color: var(--text-dim); }
+    .ch-stat-val { font-family: var(--mono); font-weight: 600; color: var(--text); }
+
+    /* ── Action caller ── */
+    .action-form {
+      display: grid; gap: 12px;
+      max-width: 600px;
+    }
+    .form-row { display: flex; flex-direction: column; gap: 6px; }
+    .form-label { font-family: var(--mono); font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+    .form-input {
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text); font-family: var(--mono); font-size: 12px;
+      padding: 8px 12px; border-radius: 6px; outline: none; width: 100%;
+      transition: border-color .2s;
+    }
+    .form-input:focus { border-color: var(--rust); }
+    .form-textarea {
+      resize: vertical; min-height: 100px;
+    }
+    .action-result {
+      margin-top: 16px; background: var(--bg);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 14px; font-family: var(--mono); font-size: 12px;
+      white-space: pre-wrap; color: var(--green);
+      max-height: 300px; overflow-y: auto;
+      display: none;
+    }
+    .action-result.visible { display: block; }
+    .action-result.error { color: var(--red); }
+
+    /* ── CB states ── */
+    .cb-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px; margin-bottom: 8px;
+    }
+    .cb-service { font-family: var(--mono); font-size: 13px; margin-bottom: 8px; }
+    .state-closed { color: var(--green); }
+    .state-open   { color: var(--red); }
+    .state-half   { color: var(--yellow); }
+
+    /* ── Empty state ── */
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 64px; gap: 12px;
+      color: var(--text-dim); text-align: center;
+    }
+    .empty-state .icon { font-size: 40px; opacity: .4; }
+    .empty-state p { font-size: 13px; max-width: 320px; line-height: 1.6; }
+    .empty-state code {
+      font-family: var(--mono); font-size: 11px;
+      background: var(--bg3); border: 1px solid var(--border);
+      padding: 2px 6px; border-radius: 4px; color: var(--cyan);
+    }
+
+    /* ── Connect overlay ── */
+    #connect-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(8,8,16,.95);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .connect-box {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 16px; padding: 40px 48px;
+      max-width: 500px; width: 100%; text-align: center;
+    }
+    .connect-box h2 {
+      font-family: var(--mono); font-size: 22px; font-weight: 700;
+      color: var(--text); margin-bottom: 8px;
+    }
+    .connect-box p { color: var(--text-dim); margin-bottom: 28px; font-size: 13px; }
+    .connect-box .logo { font-size: 36px; margin-bottom: 16px; }
+    .connect-input-row {
+      display: flex; gap: 8px; margin-bottom: 16px;
+    }
+    .connect-input-row .endpoint-input { flex: 1; padding: 10px 14px; }
+    .connect-input-row .btn-connect { padding: 10px 20px; font-size: 13px; }
+    .connect-hint {
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 6px; padding: 10px 14px; text-align: left;
+      line-height: 1.8;
+    }
+    .connect-hint span { color: var(--rust); }
+    .connect-hint a { color: var(--cyan); }
+    .demo-btn {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-dim); border-radius: 6px;
+      padding: 10px 20px; cursor: pointer; font-size: 12px;
+      transition: all .2s; margin-top: 12px; width: 100%;
+    }
+    .demo-btn:hover { background: var(--bg3); color: var(--text); }
+
+    /* ── Metrics charts ── */
+    .metrics-section { margin-bottom: 28px; }
+    .metrics-section h3 {
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 1.5px;
+      margin-bottom: 12px; padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .metrics-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 8px;
+    }
+    .metric-entry {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 14px;
+    }
+    .metric-name { font-family: var(--mono); font-size: 11px; color: var(--text-mid); margin-bottom: 4px; word-break: break-all; }
+    .metric-val { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--rust); }
+    .metric-type { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<!-- CONNECT OVERLAY -->
+<div id="connect-overlay">
+  <div class="connect-box">
+    <div class="logo">🔬</div>
+    <h2>moleculer-rs Laboratory</h2>
+    <p>Connect to your running moleculer-rs instance to inspect topology, metrics, traces, channels, and logs in real-time.</p>
+    <div class="connect-input-row">
+      <input type="text" class="endpoint-input" id="overlay-endpoint" value="http://localhost:3210" placeholder="http://localhost:3210" />
+      <button class="btn-connect" id="overlay-connect-btn" onclick="connectFromOverlay()">Connect</button>
+    </div>
+    <div class="connect-hint">
+      <span>$</span> git clone https://github.com/oneErrortime/mj<br>
+      <span>$</span> cd mj && cargo run<br>
+      <span># then connect above ↑</span><br><br>
+      Or use the original lab: <a href="https://lab.moleculer.services" target="_blank">lab.moleculer.services</a>
+    </div>
+    <button class="demo-btn" onclick="loadDemo()">⚡ Load demo data (offline preview)</button>
+  </div>
+</div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <a href="../" class="topbar-logo">🦀 moleculer<em>-rs</em> <span style="color:var(--text-dim);font-weight:300;font-size:11px;margin-left:4px">/ lab</span></a>
+  <div class="topbar-center">
+    <div class="status-dot" id="status-dot"></div>
+    <input type="text" class="endpoint-input" id="endpoint-input" value="http://localhost:3210" style="width:220px" />
+    <button class="btn-connect" id="connect-btn" onclick="connect()">Connect</button>
+    <label class="auto-refresh-label">
+      <input type="checkbox" id="auto-refresh" checked /> Auto-refresh
+    </label>
+  </div>
+  <div class="topbar-right">
+    <span class="node-id">node: <span id="node-id-display">—</span></span>
+    <button class="btn-refresh" onclick="refresh()">↻ Refresh</button>
+  </div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="layout">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">Overview</div>
+      <div class="nav-item active" onclick="showPanel('overview')" id="nav-overview">
+        <span class="icon">📊</span> Dashboard
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">Inspect</div>
+      <div class="nav-item" onclick="showPanel('topology')" id="nav-topology">
+        <span class="icon">🌐</span> Topology
+      </div>
+      <div class="nav-item" onclick="showPanel('services')" id="nav-services">
+        <span class="icon">⚙️</span> Services
+        <span class="nav-badge green" id="badge-services">0</span>
+      </div>
+      <div class="nav-item" onclick="showPanel('actions')" id="nav-actions">
+        <span class="icon">⚡</span> Actions
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">Observability</div>
+      <div class="nav-item" onclick="showPanel('metrics')" id="nav-metrics">
+        <span class="icon">📈</span> Metrics
+      </div>
+      <div class="nav-item" onclick="showPanel('traces')" id="nav-traces">
+        <span class="icon">🔍</span> Traces
+      </div>
+      <div class="nav-item" onclick="showPanel('logs')" id="nav-logs">
+        <span class="icon">📋</span> Logs
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">Messaging</div>
+      <div class="nav-item" onclick="showPanel('channels')" id="nav-channels">
+        <span class="icon">📬</span> Channels
+        <span class="nav-badge" id="badge-dlq">DLQ 0</span>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">Tools</div>
+      <div class="nav-item" onclick="showPanel('caller')" id="nav-caller">
+        <span class="icon">🎯</span> Action Caller
+      </div>
+      <div class="nav-item" onclick="showPanel('circuit')" id="nav-circuit">
+        <span class="icon">🔌</span> Circuit Breakers
+      </div>
+      <div class="nav-item" onclick="showPanel('cache')" id="nav-cache">
+        <span class="icon">💾</span> Cache
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+
+    <!-- OVERVIEW -->
+    <div class="panel active" id="panel-overview">
+      <div class="panel-header">
+        <div class="panel-title">Dashboard <small>broker overview</small></div>
+      </div>
+      <div class="panel-body">
+        <div class="overview-grid" id="overview-cards">
+          <div class="metric-card">
+            <div class="metric-card-label">Services</div>
+            <div class="metric-card-value rust" id="ov-services">—</div>
+            <div class="metric-card-sub">registered</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-card-label">Actions</div>
+            <div class="metric-card-value cyan" id="ov-actions">—</div>
+            <div class="metric-card-sub">available endpoints</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-card-label">Channels</div>
+            <div class="metric-card-value green" id="ov-channels">—</div>
+            <div class="metric-card-sub">active subscriptions</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-card-label">DLQ</div>
+            <div class="metric-card-value" id="ov-dlq" style="color:var(--text-dim)">—</div>
+            <div class="metric-card-sub">dead letter messages</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-card-label">Cache entries</div>
+            <div class="metric-card-value" id="ov-cache">—</div>
+            <div class="metric-card-sub">LRU keys</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-card-label">Trace spans</div>
+            <div class="metric-card-value" id="ov-spans">—</div>
+            <div class="metric-card-sub">recent spans</div>
+          </div>
+        </div>
+
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:20px;">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px">Broker Info</div>
+          <div id="info-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;font-size:12px;"></div>
+        </div>
+
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px;">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px">Feature Flags</div>
+          <div id="flags-row" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOPOLOGY -->
+    <div class="panel" id="panel-topology">
+      <div class="panel-header">
+        <div class="panel-title">Topology <small>service call graph</small></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="font-size:11px;color:var(--text-dim)">Drag nodes · Scroll to zoom</span>
+        </div>
+      </div>
+      <div class="topo-wrap">
+        <svg id="topology-svg"></svg>
+        <div class="topo-legend">
+          <div><div class="legend-dot" style="background:var(--cyan)"></div> Service node</div>
+          <div><div class="legend-dot" style="background:var(--rust);width:40px;height:2px;border-radius:1px"></div> Call edge</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SERVICES -->
+    <div class="panel" id="panel-services">
+      <div class="panel-header">
+        <div class="panel-title">Services <small>registered service catalog</small></div>
+      </div>
+      <div class="panel-body no-pad">
+        <div id="services-list"></div>
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="panel" id="panel-actions">
+      <div class="panel-header">
+        <div class="panel-title">Actions <small>all available action endpoints</small></div>
+      </div>
+      <div class="panel-body no-pad">
+        <table class="data-table">
+          <thead><tr><th>Action</th><th>Service</th><th>Cached</th><th>Params</th></tr></thead>
+          <tbody id="actions-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- METRICS -->
+    <div class="panel" id="panel-metrics">
+      <div class="panel-header">
+        <div class="panel-title">Metrics <small>live snapshot</small></div>
+        <a id="prom-link" href="#" target="_blank" style="font-family:var(--mono);font-size:11px;color:var(--rust);text-decoration:none">↗ /metrics/prometheus</a>
+      </div>
+      <div class="panel-body">
+        <div id="metrics-body"></div>
+      </div>
+    </div>
+
+    <!-- TRACES -->
+    <div class="panel" id="panel-traces">
+      <div class="panel-header">
+        <div class="panel-title">Traces <small>recent distributed spans</small></div>
+      </div>
+      <div class="panel-body">
+        <div id="traces-body"></div>
+      </div>
+    </div>
+
+    <!-- LOGS -->
+    <div class="panel" id="panel-logs">
+      <div class="panel-header">
+        <div class="panel-title">Logs <small>event log ring-buffer</small></div>
+        <div style="display:flex;gap:8px">
+          <select id="log-level-filter" onchange="renderLogs()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 8px;border-radius:5px;outline:none">
+            <option value="">All levels</option>
+            <option value="error">Error</option>
+            <option value="warn">Warn</option>
+            <option value="info">Info</option>
+            <option value="debug">Debug</option>
+          </select>
+        </div>
+      </div>
+      <div class="log-stream" id="log-stream"></div>
+    </div>
+
+    <!-- CHANNELS -->
+    <div class="panel" id="panel-channels">
+      <div class="panel-header">
+        <div class="panel-title">Channels <small>durable message queues</small></div>
+      </div>
+      <div class="panel-body">
+        <div id="channels-body"></div>
+      </div>
+    </div>
+
+    <!-- ACTION CALLER -->
+    <div class="panel" id="panel-caller">
+      <div class="panel-header">
+        <div class="panel-title">Action Caller <small>POST /action</small></div>
+      </div>
+      <div class="panel-body">
+        <div class="action-form">
+          <div class="form-row">
+            <label class="form-label">Action name</label>
+            <input type="text" class="form-input" id="caller-action" placeholder="math.add" />
+          </div>
+          <div class="form-row">
+            <label class="form-label">Params (JSON)</label>
+            <textarea class="form-input form-textarea" id="caller-params">{ "a": 5, "b": 3 }</textarea>
+          </div>
+          <button class="btn-connect" style="width:fit-content;padding:10px 24px;font-size:13px" onclick="callAction()">▶ Call Action</button>
+          <div class="action-result" id="caller-result"></div>
+        </div>
+
+        <div style="margin-top:28px">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">Channel Publisher</div>
+          <div class="action-form">
+            <div class="form-row">
+              <label class="form-label">Channel name</label>
+              <input type="text" class="form-input" id="chan-name" placeholder="orders.created" />
+            </div>
+            <div class="form-row">
+              <label class="form-label">Payload (JSON)</label>
+              <textarea class="form-input form-textarea" id="chan-payload">{ "id": "ORD-001", "total": 99.99 }</textarea>
+            </div>
+            <button class="btn-connect" style="width:fit-content;padding:10px 24px;font-size:13px;background:var(--cyan);color:#000" onclick="sendChannel()">📬 Publish</button>
+            <div class="action-result" id="chan-result"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CIRCUIT BREAKERS -->
+    <div class="panel" id="panel-circuit">
+      <div class="panel-header">
+        <div class="panel-title">Circuit Breakers <small>state per service</small></div>
+      </div>
+      <div class="panel-body">
+        <div id="cb-body"></div>
+      </div>
+    </div>
+
+    <!-- CACHE -->
+    <div class="panel" id="panel-cache">
+      <div class="panel-header">
+        <div class="panel-title">Cache <small>LRU memory cacher stats</small></div>
+      </div>
+      <div class="panel-body">
+        <div id="cache-body"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+let endpoint = 'http://localhost:3210';
+let connected = false;
+let autoRefresh = true;
+let refreshInterval = null;
+let currentPanel = 'overview';
+let stateData = {};
+let logData = [];
+let tracesData = [];
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.getElementById('auto-refresh').addEventListener('change', e => {
+  autoRefresh = e.target.checked;
+  if (autoRefresh && connected) startRefresh();
+  else clearInterval(refreshInterval);
+});
+
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  currentPanel = name;
+  if (connected) loadPanel(name);
+}
+
+// ─── Connection ───────────────────────────────────────────────────────────────
+async function connectFromOverlay() {
+  const ep = document.getElementById('overlay-endpoint').value.trim();
+  document.getElementById('endpoint-input').value = ep;
+  await connect();
+}
+
+async function connect() {
+  endpoint = document.getElementById('endpoint-input').value.trim().replace(/\/$/, '');
+  document.getElementById('overlay-endpoint').value = endpoint;
+
+  setStatus('connecting');
+  document.getElementById('connect-btn').textContent = '...';
+  document.getElementById('connect-btn').className = 'btn-connect connecting';
+
+  try {
+    const res = await fetchEndpoint('/health');
+    if (res.status === 'ok' || res.node_id) {
+      connected = true;
+      setStatus('online');
+      document.getElementById('connect-btn').textContent = '✓ Live';
+      document.getElementById('connect-btn').className = 'btn-connect connected';
+      document.getElementById('node-id-display').textContent = res.node_id || '?';
+      document.getElementById('connect-overlay').style.display = 'none';
+      document.getElementById('prom-link').href = endpoint + '/metrics/prometheus';
+      await refresh();
+      startRefresh();
+    } else {
+      throw new Error('bad response');
+    }
+  } catch (e) {
+    setStatus('error');
+    document.getElementById('connect-btn').textContent = 'Retry';
+    document.getElementById('connect-btn').className = 'btn-connect';
+    alert('Could not connect to ' + endpoint + '\n\nMake sure your moleculer-rs instance is running.\nAlso check CORS — you may need to run cargo with CORS headers.');
+  }
+}
+
+function setStatus(s) {
+  const dot = document.getElementById('status-dot');
+  dot.className = 'status-dot ' + (s === 'online' ? 'online' : s === 'error' ? 'error' : '');
+}
+
+async function fetchEndpoint(path) {
+  const res = await fetch(endpoint + path, { headers: { 'Accept': 'application/json' } });
+  return res.json();
+}
+
+async function postEndpoint(path, body) {
+  const res = await fetch(endpoint + path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+// ─── Refresh ──────────────────────────────────────────────────────────────────
+function startRefresh() {
+  clearInterval(refreshInterval);
+  if (autoRefresh) refreshInterval = setInterval(refresh, 3000);
+}
+
+async function refresh() {
+  if (!connected) return;
+  await loadPanel(currentPanel);
+  // Always refresh sidebar badges
+  try {
+    const ch = await fetchEndpoint('/channels');
+    let dlq = 0;
+    if (ch.channels) ch.channels.forEach(c => { dlq += (c.dlq_size||0); });
+    document.getElementById('badge-dlq').textContent = 'DLQ ' + dlq;
+    document.getElementById('badge-dlq').className = 'nav-badge' + (dlq > 0 ? ' red' : '');
+  } catch(e) {}
+  try {
+    const sv = await fetchEndpoint('/services');
+    const cnt = (sv.services||[]).length;
+    document.getElementById('badge-services').textContent = cnt;
+  } catch(e) {}
+}
+
+async function loadPanel(name) {
+  try {
+    switch(name) {
+      case 'overview':   await loadOverview(); break;
+      case 'topology':   await loadTopology(); break;
+      case 'services':   await loadServices(); break;
+      case 'actions':    await loadActions(); break;
+      case 'metrics':    await loadMetrics(); break;
+      case 'traces':     await loadTraces(); break;
+      case 'logs':       await loadLogs(); break;
+      case 'channels':   await loadChannels(); break;
+      case 'circuit':    await loadCircuit(); break;
+      case 'cache':      await loadCache(); break;
+    }
+  } catch(e) { /* silently fail on fetch errors */ }
+}
+
+// ─── Overview ─────────────────────────────────────────────────────────────────
+async function loadOverview() {
+  const [info, services, channels, cache, traces] = await Promise.allSettled([
+    fetchEndpoint('/info'),
+    fetchEndpoint('/services'),
+    fetchEndpoint('/channels'),
+    fetchEndpoint('/cache'),
+    fetchEndpoint('/traces'),
+  ]);
+
+  const iv = info.value || {};
+  const sv = (services.value?.services || []);
+  const cv = channels.value?.channels || [];
+  let dlq = 0; cv.forEach(c => dlq += (c.dlq_size||0));
+  const cacheEntries = cache.value?.size || cache.value?.entries || 0;
+  const spanCnt = (traces.value?.spans || traces.value?.traces || []).length;
+
+  let allActions = 0;
+  sv.forEach(s => allActions += (s.actions||[]).length);
+
+  document.getElementById('ov-services').textContent = sv.length;
+  document.getElementById('ov-actions').textContent = allActions;
+  document.getElementById('ov-channels').textContent = cv.length;
+  document.getElementById('ov-dlq').textContent = dlq;
+  document.getElementById('ov-dlq').style.color = dlq > 0 ? 'var(--red)' : 'var(--text-dim)';
+  document.getElementById('ov-cache').textContent = cacheEntries;
+  document.getElementById('ov-spans').textContent = spanCnt;
+
+  // Info grid
+  const infoFields = [
+    ['node_id', iv.node_id],
+    ['instance_id', (iv.instance_id||'').slice(0,8)+'…'],
+    ['namespace', iv.namespace || '(default)'],
+    ['version', iv.version || '?'],
+    ['name', iv.name || '?'],
+  ].filter(([,v]) => v);
+  document.getElementById('info-grid').innerHTML = infoFields.map(([k,v]) =>
+    `<div><span style="color:var(--text-dim);font-family:var(--mono);font-size:10px">${k}</span><br><span style="font-family:var(--mono);font-size:12px;color:var(--cyan)">${v}</span></div>`
+  ).join('');
+
+  // Feature flags
+  const flags = [
+    ['metrics', iv.metrics_enabled],
+    ['tracing', iv.tracing_enabled],
+    ['cacher', iv.cacher_enabled],
+    ['channels', iv.channels_enabled],
+    ['circuit_breaker', iv.circuit_breaker_enabled],
+    ['retry', iv.retry_enabled],
+    ['bulkhead', iv.bulkhead_enabled],
+  ];
+  document.getElementById('flags-row').innerHTML = flags.map(([name, val]) =>
+    `<span class="tag ${val ? 'tag-green' : 'tag-red'}">${val ? '✓' : '✗'} ${name}</span>`
+  ).join('');
+}
+
+// ─── Topology ─────────────────────────────────────────────────────────────────
+let topoSim = null;
+
+async function loadTopology() {
+  const data = await fetchEndpoint('/topology');
+  const edges = data.edges || data || [];
+  const services = await fetchEndpoint('/services');
+  const serviceNames = (services.services || []).map(s => s.name);
+
+  // Build nodes & links
+  const nodeMap = new Map();
+  serviceNames.forEach(n => nodeMap.set(n, { id: n }));
+  edges.forEach(e => {
+    if (e.caller) nodeMap.set(e.caller, { id: e.caller });
+    if (e.callee) nodeMap.set(e.callee, { id: e.callee });
+  });
+  const nodes = [...nodeMap.values()];
+  const links = edges.map(e => ({
+    source: e.caller || e.from,
+    target: e.callee || e.to,
+    label: e.action || '',
+    rpm: e.requests_per_min || e.rpm || 0,
+    latency: e.avg_latency_ms || e.latency || 0,
+  }));
+
+  renderTopology(nodes, links);
+}
+
+function renderTopology(nodes, links) {
+  const svg = document.getElementById('topology-svg');
+  const w = svg.clientWidth || 800;
+  const h = svg.clientHeight || 500;
+  d3.select(svg).selectAll('*').remove();
+
+  if (nodes.length === 0) {
+    d3.select(svg).append('text')
+      .attr('x', w/2).attr('y', h/2).attr('text-anchor', 'middle')
+      .attr('fill', '#6b6b88').attr('font-family', 'JetBrains Mono').attr('font-size', 13)
+      .text('No topology data — call some actions first');
+    return;
+  }
+
+  const defs = d3.select(svg).append('defs');
+  defs.append('marker').attr('id', 'arrow')
+    .attr('viewBox', '0 -5 10 10').attr('refX', 28).attr('refY', 0)
+    .attr('markerWidth', 6).attr('markerHeight', 6).attr('orient', 'auto')
+    .append('path').attr('d', 'M0,-5L10,0L0,5').attr('fill', '#f97316').attr('opacity', .7);
+
+  const g = d3.select(svg).append('g');
+  d3.select(svg).call(d3.zoom().scaleExtent([.3, 3]).on('zoom', e => g.attr('transform', e.transform)));
+
+  if (topoSim) topoSim.stop();
+  topoSim = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d => d.id).distance(120))
+    .force('charge', d3.forceManyBody().strength(-400))
+    .force('center', d3.forceCenter(w/2, h/2))
+    .force('collision', d3.forceCollide(50));
+
+  const link = g.append('g').selectAll('line').data(links).enter().append('line')
+    .attr('stroke', '#f97316').attr('stroke-opacity', .5)
+    .attr('stroke-width', 1.5).attr('marker-end', 'url(#arrow)');
+
+  const linkLabel = g.append('g').selectAll('text').data(links).enter().append('text')
+    .attr('fill', '#6b6b88').attr('font-family', 'JetBrains Mono').attr('font-size', 9)
+    .text(d => d.label ? d.label.split('.').pop() : '');
+
+  const node = g.append('g').selectAll('g').data(nodes).enter().append('g')
+    .call(d3.drag()
+      .on('start', (e, d) => { if (!e.active) topoSim.alphaTarget(.3).restart(); d.fx = d.x; d.fy = d.y; })
+      .on('drag',  (e, d) => { d.fx = e.x; d.fy = e.y; })
+      .on('end',   (e, d) => { if (!e.active) topoSim.alphaTarget(0); d.fx = null; d.fy = null; })
+    );
+
+  node.append('circle').attr('r', 24).attr('fill', '#0d0d1a')
+    .attr('stroke', '#22d3ee').attr('stroke-width', 1.5)
+    .attr('filter', 'drop-shadow(0 0 8px rgba(34,211,238,.3))');
+
+  node.append('text').attr('text-anchor', 'middle').attr('dy', '0.35em')
+    .attr('fill', '#22d3ee').attr('font-family', 'JetBrains Mono').attr('font-size', 10).attr('font-weight', '600')
+    .text(d => d.id.length > 8 ? d.id.slice(0,7)+'…' : d.id);
+
+  node.append('title').text(d => d.id);
+
+  topoSim.on('tick', () => {
+    link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+        .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+    linkLabel.attr('x', d => (d.source.x + d.target.x)/2).attr('y', d => (d.source.y + d.target.y)/2 - 5);
+    node.attr('transform', d => `translate(${d.x},${d.y})`);
+  });
+}
+
+// ─── Services ─────────────────────────────────────────────────────────────────
+async function loadServices() {
+  const data = await fetchEndpoint('/services');
+  const services = data.services || [];
+
+  if (!services.length) {
+    document.getElementById('services-list').innerHTML = emptyState('⚙️', 'No services registered yet');
+    return;
+  }
+
+  document.getElementById('services-list').innerHTML = services.map(s => `
+    <div style="border-bottom:1px solid var(--border);padding:20px 24px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <span style="font-family:var(--mono);font-size:15px;color:var(--cyan);font-weight:600">${s.name}</span>
+        ${s.version ? `<span class="tag tag-purple">v${s.version}</span>` : ''}
+        <span class="tag tag-green">● running</span>
+      </div>
+      ${(s.actions||[]).length ? `
+        <div style="margin-bottom:10px">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Actions (${s.actions.length})</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            ${s.actions.map(a => `<span class="tag tag-rust">${a.name||a}</span>`).join('')}
+          </div>
+        </div>
+      ` : ''}
+      ${(s.events||[]).length ? `
+        <div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Events (${s.events.length})</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            ${s.events.map(e => `<span class="tag tag-cyan">${e.name||e}</span>`).join('')}
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+}
+
+// ─── Actions ──────────────────────────────────────────────────────────────────
+async function loadActions() {
+  const data = await fetchEndpoint('/actions');
+  const actions = data.actions || [];
+
+  const tbody = document.getElementById('actions-tbody');
+  if (!actions.length) {
+    tbody.innerHTML = `<tr><td colspan="4">${emptyState('⚡', 'No actions registered')}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = actions.map(a => `
+    <tr>
+      <td class="mono" style="color:var(--cyan)">${a.name || a}</td>
+      <td class="mono">${a.service || '—'}</td>
+      <td>${a.cache ? '<span class="tag tag-green">cached</span>' : '<span style="color:var(--text-dim)">—</span>'}</td>
+      <td class="mono" style="color:var(--text-dim)">${(a.params||[]).join(', ') || '—'}</td>
+    </tr>
+  `).join('');
+}
+
+// ─── Metrics ──────────────────────────────────────────────────────────────────
+async function loadMetrics() {
+  const data = await fetchEndpoint('/metrics');
+  const metrics = data.metrics || data || [];
+
+  if (!metrics.length && !Object.keys(data).length) {
+    document.getElementById('metrics-body').innerHTML = emptyState('📈', 'No metrics yet — enable metrics in BrokerConfig');
+    return;
+  }
+
+  // Group by type
+  const groups = {};
+  (Array.isArray(metrics) ? metrics : Object.values(data)).forEach(m => {
+    const type = m.metric_type || m.type || 'other';
+    if (!groups[type]) groups[type] = [];
+    groups[type].push(m);
+  });
+
+  document.getElementById('metrics-body').innerHTML = Object.entries(groups).map(([type, items]) => `
+    <div class="metrics-section">
+      <h3>${type}</h3>
+      <div class="metrics-grid">
+        ${items.map(m => `
+          <div class="metric-entry">
+            <div class="metric-name">${m.name}</div>
+            <div class="metric-val">${formatNum(m.value)}</div>
+            <div class="metric-type">${m.unit||''} ${m.description||''}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── Traces ───────────────────────────────────────────────────────────────────
+async function loadTraces() {
+  const data = await fetchEndpoint('/traces');
+  const spans = data.spans || data.traces || [];
+
+  if (!spans.length) {
+    document.getElementById('traces-body').innerHTML = emptyState('🔍', 'No traces yet — make some broker.call() requests');
+    return;
+  }
+
+  // Group by trace_id
+  const traces = new Map();
+  spans.forEach(span => {
+    const tid = span.trace_id || span.id;
+    if (!traces.has(tid)) traces.set(tid, []);
+    traces.get(tid).push(span);
+  });
+
+  document.getElementById('traces-body').innerHTML = [...traces.entries()].slice(0, 50).map(([tid, tspans]) => {
+    const root = tspans.find(s => !s.parent_id) || tspans[0];
+    const totalDur = tspans.reduce((a, s) => a + (s.duration_ms || 0), 0);
+    const maxDur = Math.max(...tspans.map(s => s.duration_ms || 1));
+
+    return `
+    <div class="trace-item">
+      <div class="trace-header" onclick="toggleTrace(this)">
+        <span class="trace-name">${root?.name || 'trace'}</span>
+        <span class="trace-id">${tid.slice(0,12)}…</span>
+        <span class="tag tag-cyan">${tspans.length} spans</span>
+        <span class="trace-dur">${totalDur.toFixed(1)}ms</span>
+        <span style="color:var(--text-dim);margin-left:8px">▼</span>
+      </div>
+      <div class="trace-spans-wrap">
+        ${tspans.map(span => `
+          <div class="span-row">
+            <span class="span-indent">${span.parent_id ? '  └─' : '●'}</span>
+            <span class="span-name">${span.name}</span>
+            <div class="span-bar-wrap">
+              <div class="span-bar" style="width:${Math.max(2,(span.duration_ms||0)/maxDur*100)}%;background:${span.parent_id ? 'var(--rust)' : 'var(--cyan)'}"></div>
+            </div>
+            <span class="span-dur">${(span.duration_ms||0).toFixed(2)}ms</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleTrace(header) {
+  const wrap = header.nextElementSibling;
+  wrap.classList.toggle('open');
+  header.querySelector('span:last-child').textContent = wrap.classList.contains('open') ? '▲' : '▼';
+}
+
+// ─── Logs ─────────────────────────────────────────────────────────────────────
+async function loadLogs() {
+  const data = await fetchEndpoint('/logs');
+  logData = data.logs || data || [];
+  renderLogs();
+}
+
+function renderLogs() {
+  const filter = document.getElementById('log-level-filter').value;
+  const logs = filter ? logData.filter(l => (l.level||'').toLowerCase() === filter) : logData;
+
+  if (!logs.length) {
+    document.getElementById('log-stream').innerHTML = `<div style="color:var(--text-dim);padding:16px">No logs yet</div>`;
+    return;
+  }
+
+  document.getElementById('log-stream').innerHTML = logs.slice(-200).reverse().map(l => {
+    const lvl = (l.level||'info').toLowerCase();
+    const ts = l.timestamp ? new Date(l.timestamp).toISOString().split('T')[1].split('.')[0] : '--:--:--';
+    return `<div class="log-line">
+      <span class="log-ts">${ts}</span>
+      <span class="log-lvl ${lvl}">${lvl.toUpperCase()}</span>
+      <span class="log-svc">${l.service || l.module || '?'}</span>
+      <span class="log-msg">${l.message || l.msg || ''}</span>
+    </div>`;
+  }).join('');
+}
+
+// ─── Channels ─────────────────────────────────────────────────────────────────
+async function loadChannels() {
+  const data = await fetchEndpoint('/channels');
+  const channels = data.channels || [];
+
+  if (!channels.length) {
+    document.getElementById('channels-body').innerHTML = emptyState('📬', 'No channels subscribed yet', 'Use broker.subscribe_channel() in your service');
+    return;
+  }
+
+  document.getElementById('channels-body').innerHTML = channels.map(ch => `
+    <div class="channel-row">
+      <div class="channel-name">${ch.name || ch.channel}</div>
+      <div class="channel-stats">
+        <div class="ch-stat"><div class="ch-stat-label">Group</div><div class="ch-stat-val">${ch.group || '—'}</div></div>
+        <div class="ch-stat"><div class="ch-stat-label">Processed</div><div class="ch-stat-val">${ch.processed || 0}</div></div>
+        <div class="ch-stat"><div class="ch-stat-label">In-flight</div><div class="ch-stat-val">${ch.in_flight || 0}</div></div>
+        <div class="ch-stat"><div class="ch-stat-label">Retried</div><div class="ch-stat-val">${ch.retried || 0}</div></div>
+        <div class="ch-stat">
+          <div class="ch-stat-label">DLQ</div>
+          <div class="ch-stat-val" style="color:${(ch.dlq_size||0)>0?'var(--red)':'var(--text)'}">${ch.dlq_size || 0}</div>
+        </div>
+        <div class="ch-stat"><div class="ch-stat-label">Max in-flight</div><div class="ch-stat-val">${ch.max_in_flight || '—'}</div></div>
+      </div>
+      ${(ch.dlq_messages||[]).length ? `
+        <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--red);margin-bottom:8px">DEAD LETTER QUEUE</div>
+          ${ch.dlq_messages.slice(0,5).map(m => `
+            <div style="background:rgba(248,113,113,.05);border:1px solid rgba(248,113,113,.15);border-radius:6px;padding:8px 12px;margin-bottom:6px;font-size:11px;">
+              <span style="font-family:var(--mono);color:var(--text-dim)">${m.id}</span>
+              <span style="color:var(--red);margin-left:12px">${m.error || m.error_message || 'max retries exceeded'}</span>
+              <button onclick="retryDLQ('${ch.name}','${m.id}')" style="float:right;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);color:var(--rust);font-size:10px;padding:2px 8px;border-radius:4px;cursor:pointer">↩ Retry</button>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+}
+
+async function retryDLQ(channel, id) {
+  try {
+    await fetch(endpoint + '/channels/dlq/' + id, { method: 'DELETE' });
+    await loadChannels();
+  } catch(e) { alert('Failed to retry: ' + e.message); }
+}
+
+// ─── Circuit Breakers ─────────────────────────────────────────────────────────
+async function loadCircuit() {
+  const data = await fetchEndpoint('/circuit-breakers');
+  const cbs = data.circuit_breakers || data || [];
+
+  if (!cbs.length) {
+    document.getElementById('cb-body').innerHTML = emptyState('🔌', 'No circuit breakers tracked yet', 'Enable with .with_circuit_breaker() in BrokerConfig');
+    return;
+  }
+
+  document.getElementById('cb-body').innerHTML = cbs.map(cb => {
+    const state = (cb.state||'closed').toLowerCase();
+    const cls = state === 'closed' ? 'state-closed' : state === 'open' ? 'state-open' : 'state-half';
+    return `
+    <div class="cb-card">
+      <div class="cb-service">${cb.service || cb.action || cb.name}</div>
+      <div style="display:flex;gap:20px;font-size:12px">
+        <div><span style="color:var(--text-dim)">State: </span><span class="${cls} mono">${state.toUpperCase()}</span></div>
+        <div><span style="color:var(--text-dim)">Failures: </span><span class="mono">${cb.failures || 0}</span></div>
+        <div><span style="color:var(--text-dim)">Requests: </span><span class="mono">${cb.requests || 0}</span></div>
+        ${cb.last_failure ? `<div><span style="color:var(--text-dim)">Last fail: </span><span class="mono">${new Date(cb.last_failure).toISOString().split('T')[1].split('.')[0]}</span></div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Cache ────────────────────────────────────────────────────────────────────
+async function loadCache() {
+  const data = await fetchEndpoint('/cache');
+
+  document.getElementById('cache-body').innerHTML = `
+    <div class="overview-grid" style="margin-bottom:20px">
+      <div class="metric-card">
+        <div class="metric-card-label">Entries</div>
+        <div class="metric-card-value rust">${data.size || data.entries || 0}</div>
+        <div class="metric-card-sub">cached keys</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-card-label">Hits</div>
+        <div class="metric-card-value green">${data.hits || 0}</div>
+        <div class="metric-card-sub">cache hits</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-card-label">Misses</div>
+        <div class="metric-card-value">${data.misses || 0}</div>
+        <div class="metric-card-sub">cache misses</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-card-label">Hit rate</div>
+        <div class="metric-card-value cyan">${data.hits && data.misses ? ((data.hits/(data.hits+data.misses))*100).toFixed(1)+'%' : '—'}</div>
+        <div class="metric-card-sub">efficiency</div>
+      </div>
+    </div>
+    ${(data.keys||[]).length ? `
+      <table class="data-table">
+        <thead><tr><th>Key</th><th>TTL</th><th>Size</th></tr></thead>
+        <tbody>
+          ${data.keys.map(k => `<tr>
+            <td class="mono" style="color:var(--cyan)">${k.key||k}</td>
+            <td class="mono">${k.ttl || '—'}</td>
+            <td class="mono">${k.size || '—'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    ` : '<div style="color:var(--text-dim);font-size:12px">No individual key data available</div>'}
+  `;
+}
+
+// ─── Action Caller ────────────────────────────────────────────────────────────
+async function callAction() {
+  const action = document.getElementById('caller-action').value.trim();
+  const paramsStr = document.getElementById('caller-params').value.trim();
+  const result = document.getElementById('caller-result');
+
+  if (!action) { alert('Enter an action name'); return; }
+
+  let params = {};
+  try { params = JSON.parse(paramsStr); } catch(e) { alert('Invalid JSON params'); return; }
+
+  result.className = 'action-result visible';
+  result.textContent = '// calling ' + action + '...';
+
+  try {
+    const res = await postEndpoint('/action', { action, params });
+    result.className = 'action-result visible';
+    result.textContent = JSON.stringify(res, null, 2);
+  } catch(e) {
+    result.className = 'action-result visible error';
+    result.textContent = '// Error: ' + e.message;
+  }
+}
+
+async function sendChannel() {
+  const name = document.getElementById('chan-name').value.trim();
+  const payloadStr = document.getElementById('chan-payload').value.trim();
+  const result = document.getElementById('chan-result');
+
+  if (!name) { alert('Enter a channel name'); return; }
+
+  let payload = {};
+  try { payload = JSON.parse(payloadStr); } catch(e) { alert('Invalid JSON payload'); return; }
+
+  result.className = 'action-result visible';
+  result.textContent = '// publishing to ' + name + '...';
+
+  try {
+    const res = await postEndpoint('/channels/send', { channel: name, payload });
+    result.className = 'action-result visible';
+    result.textContent = JSON.stringify(res, null, 2);
+  } catch(e) {
+    result.className = 'action-result visible error';
+    result.textContent = '// Error: ' + e.message;
+  }
+}
+
+// ─── Demo mode ────────────────────────────────────────────────────────────────
+function loadDemo() {
+  connected = true;
+  document.getElementById('connect-overlay').style.display = 'none';
+  document.getElementById('status-dot').className = 'status-dot online';
+  document.getElementById('connect-btn').textContent = '⚡ Demo';
+  document.getElementById('connect-btn').className = 'btn-connect connected';
+  document.getElementById('node-id-display').textContent = 'node-main';
+  document.getElementById('prom-link').href = '#';
+
+  // Inject demo data
+  renderDemoOverview();
+  loadDemoTopology();
+}
+
+function renderDemoOverview() {
+  document.getElementById('ov-services').textContent = '3';
+  document.getElementById('ov-actions').textContent = '5';
+  document.getElementById('ov-channels').textContent = '2';
+  document.getElementById('ov-dlq').textContent = '0';
+  document.getElementById('ov-cache').textContent = '4';
+  document.getElementById('ov-spans').textContent = '12';
+
+  document.getElementById('info-grid').innerHTML = [
+    ['node_id','node-main'],['namespace','demo'],['version','0.1.0'],['name','moleculer-rs demo']
+  ].map(([k,v]) => `<div><span style="color:var(--text-dim);font-family:var(--mono);font-size:10px">${k}</span><br><span style="font-family:var(--mono);font-size:12px;color:var(--cyan)">${v}</span></div>`).join('');
+
+  document.getElementById('flags-row').innerHTML = ['metrics','tracing','cacher','channels','circuit_breaker','retry','bulkhead']
+    .map(f => `<span class="tag tag-green">✓ ${f}</span>`).join('');
+
+  document.getElementById('badge-services').textContent = '3';
+}
+
+function loadDemoTopology() {
+  const nodes = [
+    {id:'math'},{id:'greeter'},{id:'v2.posts'},{id:'API Gateway'}
+  ];
+  const links = [
+    {source:'API Gateway', target:'math', label:'math.add', rpm:42, latency:1.2},
+    {source:'API Gateway', target:'greeter', label:'greeter.hello', rpm:18, latency:0.8},
+    {source:'API Gateway', target:'v2.posts', label:'v2.posts.list', rpm:7, latency:0.4},
+    {source:'greeter', target:'math', label:'math.fib', rpm:3, latency:5.1},
+  ];
+  renderTopology(nodes, links);
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function emptyState(icon, title, sub) {
+  return `<div class="empty-state"><div class="icon">${icon}</div><strong style="color:var(--text-mid)">${title}</strong>${sub?`<p>${sub}</p>`:''}</div>`;
+}
+
+function formatNum(n) {
+  if (n === undefined || n === null) return '—';
+  if (n >= 1e6) return (n/1e6).toFixed(1)+'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1)+'k';
+  if (typeof n === 'number' && !Number.isInteger(n)) return n.toFixed(3);
+  return String(n);
+}
+
+// Initial panel
+showPanel('overview');
+</script>
+</body>
+</html>

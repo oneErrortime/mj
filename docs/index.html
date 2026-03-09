@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>moleculer-rs — Rust microservices framework</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #080810;
+      --bg2:      #0d0d1a;
+      --bg3:      #111124;
+      --border:   #1e1e38;
+      --rust:     #f97316;
+      --rust2:    #fb923c;
+      --rust-dim: rgba(249,115,22,.12);
+      --cyan:     #22d3ee;
+      --cyan-dim: rgba(34,211,238,.08);
+      --green:    #4ade80;
+      --red:      #f87171;
+      --text:     #e2e2f0;
+      --text-dim: #6b6b88;
+      --text-mid: #a0a0bf;
+      --mono:     'JetBrains Mono', monospace;
+      --sans:     'DM Sans', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 16px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── Grid noise texture ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(249,115,22,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(249,115,22,.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 48px;
+      background: rgba(8,8,16,.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: var(--mono); font-size: 15px; font-weight: 600;
+      color: var(--text); text-decoration: none;
+    }
+    .nav-logo .crab { font-size: 20px; }
+    .nav-logo span { color: var(--rust); }
+
+    .nav-links { display: flex; align-items: center; gap: 8px; }
+    .nav-links a {
+      color: var(--text-mid); text-decoration: none;
+      font-size: 13px; font-weight: 500;
+      padding: 6px 14px; border-radius: 6px;
+      transition: color .2s, background .2s;
+    }
+    .nav-links a:hover { color: var(--text); background: var(--bg3); }
+    .nav-cta {
+      background: var(--rust) !important; color: #000 !important;
+      font-weight: 600 !important; border-radius: 6px !important;
+      padding: 7px 16px !important;
+    }
+    .nav-cta:hover { background: var(--rust2) !important; }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative; z-index: 1;
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 120px 24px 80px;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .hero-glow {
+      position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%);
+      width: 800px; height: 400px;
+      background: radial-gradient(ellipse, rgba(249,115,22,.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--mono); font-size: 11px; font-weight: 500;
+      color: var(--rust); background: var(--rust-dim);
+      border: 1px solid rgba(249,115,22,.3);
+      padding: 5px 14px; border-radius: 100px;
+      margin-bottom: 32px;
+      animation: fadeUp .6s ease both;
+    }
+    .hero-badge::before { content: '●'; font-size: 8px; animation: pulse 2s infinite; }
+
+    @keyframes pulse {
+      0%,100% { opacity: 1; } 50% { opacity: .3; }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero h1 {
+      font-family: var(--mono); font-size: clamp(42px, 7vw, 88px);
+      font-weight: 700; line-height: 1; letter-spacing: -2px;
+      margin-bottom: 8px;
+      animation: fadeUp .6s .1s ease both;
+    }
+    .hero h1 em { font-style: normal; color: var(--rust); }
+
+    .hero-sub {
+      font-family: var(--mono); font-size: clamp(14px, 2vw, 18px);
+      color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase;
+      margin-bottom: 28px;
+      animation: fadeUp .6s .2s ease both;
+    }
+
+    .hero p {
+      max-width: 560px; font-size: 18px; color: var(--text-mid);
+      line-height: 1.7; margin-bottom: 48px;
+      animation: fadeUp .6s .3s ease both;
+    }
+
+    .hero-actions {
+      display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+      animation: fadeUp .6s .4s ease both;
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 24px; border-radius: 8px;
+      font-size: 14px; font-weight: 600; text-decoration: none;
+      transition: all .2s; cursor: pointer; border: none;
+    }
+    .btn-primary {
+      background: var(--rust); color: #000;
+    }
+    .btn-primary:hover { background: var(--rust2); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(249,115,22,.3); }
+    .btn-ghost {
+      background: transparent; color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--bg3); border-color: var(--text-dim); }
+
+    /* ── Terminal demo ── */
+    .terminal-wrap {
+      position: relative; z-index: 1;
+      max-width: 820px; margin: 64px auto 0;
+      animation: fadeUp .6s .5s ease both;
+    }
+    .terminal {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(249,115,22,.05);
+    }
+    .terminal-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 16px; background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #ffbd2e; }
+    .dot-g { background: #28ca41; }
+    .terminal-title {
+      font-family: var(--mono); font-size: 12px; color: var(--text-dim);
+      margin-left: auto; margin-right: auto;
+    }
+    .terminal-body {
+      padding: 24px; font-family: var(--mono); font-size: 13px;
+      line-height: 1.8; overflow-x: auto;
+    }
+    .line { display: flex; gap: 12px; }
+    .ln { color: var(--text-dim); user-select: none; min-width: 20px; text-align: right; }
+    .kw  { color: #c792ea; }
+    .fn  { color: var(--cyan); }
+    .st  { color: var(--green); }
+    .nm  { color: var(--rust); }
+    .cm  { color: var(--text-dim); }
+    .op  { color: #89ddff; }
+    .tx  { color: var(--text); }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      position: relative; z-index: 1;
+      display: flex; justify-content: center; gap: 0;
+      max-width: 760px; margin: 64px auto;
+      border: 1px solid var(--border); border-radius: 12px;
+      overflow: hidden; background: var(--bg2);
+    }
+    .stat {
+      flex: 1; padding: 24px 32px; text-align: center;
+      border-right: 1px solid var(--border);
+    }
+    .stat:last-child { border-right: none; }
+    .stat-num {
+      font-family: var(--mono); font-size: 32px; font-weight: 700;
+      color: var(--rust); display: block; line-height: 1;
+    }
+    .stat-label {
+      font-size: 12px; color: var(--text-dim); text-transform: uppercase;
+      letter-spacing: 1px; margin-top: 6px;
+    }
+
+    /* ── Section ── */
+    section {
+      position: relative; z-index: 1;
+      max-width: 1100px; margin: 0 auto; padding: 96px 24px;
+    }
+
+    .section-tag {
+      font-family: var(--mono); font-size: 11px; font-weight: 600;
+      color: var(--rust); text-transform: uppercase; letter-spacing: 2px;
+      margin-bottom: 12px;
+    }
+    h2 {
+      font-family: var(--mono); font-size: clamp(28px, 4vw, 44px);
+      font-weight: 700; letter-spacing: -1px; line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .section-desc {
+      font-size: 17px; color: var(--text-mid); max-width: 520px;
+      line-height: 1.7; margin-bottom: 56px;
+    }
+
+    /* ── Feature grid ── */
+    .feature-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1px; background: var(--border); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden;
+    }
+    .feature-card {
+      background: var(--bg2); padding: 28px;
+      transition: background .2s;
+    }
+    .feature-card:hover { background: var(--bg3); }
+    .feature-icon {
+      font-size: 24px; margin-bottom: 12px; display: block;
+    }
+    .feature-card h3 {
+      font-family: var(--mono); font-size: 14px; font-weight: 600;
+      color: var(--text); margin-bottom: 8px;
+    }
+    .feature-card p { font-size: 13px; color: var(--text-dim); line-height: 1.6; }
+    .feature-status {
+      display: inline-block; margin-top: 12px;
+      font-family: var(--mono); font-size: 10px; font-weight: 600;
+      padding: 2px 8px; border-radius: 4px;
+      background: rgba(74,222,128,.1); color: var(--green);
+      border: 1px solid rgba(74,222,128,.2);
+    }
+
+    /* ── Architecture diagram ── */
+    .arch-wrap {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 16px; padding: 40px; overflow: auto;
+    }
+    .arch-ascii {
+      font-family: var(--mono); font-size: 12px; line-height: 1.6;
+      color: var(--text-dim); white-space: pre;
+    }
+    .arch-ascii .hl { color: var(--rust); }
+    .arch-ascii .hl2 { color: var(--cyan); }
+    .arch-ascii .hl3 { color: var(--green); }
+
+    /* ── Channels section ── */
+    .channels-layout {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+    }
+    @media (max-width: 700px) { .channels-layout { grid-template-columns: 1fr; } }
+
+    .channel-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px;
+    }
+    .channel-card h3 {
+      font-family: var(--mono); font-size: 13px; color: var(--cyan);
+      margin-bottom: 8px;
+    }
+    .channel-flow {
+      display: flex; align-items: center; gap: 8px;
+      flex-wrap: wrap; margin-top: 16px;
+    }
+    .flow-node {
+      font-family: var(--mono); font-size: 11px; font-weight: 600;
+      padding: 4px 10px; border-radius: 4px;
+      background: var(--bg3); border: 1px solid var(--border);
+    }
+    .flow-node.prod { color: var(--rust); border-color: rgba(249,115,22,.3); }
+    .flow-node.chan { color: var(--cyan); border-color: rgba(34,211,238,.3); }
+    .flow-node.cons { color: var(--green); border-color: rgba(74,222,128,.3); }
+    .flow-node.dlq  { color: var(--red); border-color: rgba(248,113,113,.3); }
+    .flow-arrow { color: var(--text-dim); font-size: 12px; }
+
+    /* ── Lab CTA ── */
+    .lab-cta {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 64px; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .lab-cta::before {
+      content: '';
+      position: absolute; top: -50%; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 300px;
+      background: radial-gradient(ellipse, rgba(34,211,238,.08) 0%, transparent 70%);
+    }
+    .lab-cta h2 { font-size: clamp(28px, 4vw, 48px); margin-bottom: 16px; }
+    .lab-cta p { color: var(--text-mid); max-width: 480px; margin: 0 auto 40px; }
+
+    /* ── Table ── */
+    .feature-table {
+      width: 100%; border-collapse: collapse;
+      font-size: 13px; font-family: var(--mono);
+    }
+    .feature-table th {
+      text-align: left; padding: 10px 16px;
+      color: var(--rust); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 1px; border-bottom: 1px solid var(--border);
+    }
+    .feature-table td {
+      padding: 10px 16px; color: var(--text-mid);
+      border-bottom: 1px solid rgba(30,30,56,.5);
+    }
+    .feature-table tr:hover td { background: var(--bg3); }
+    .td-name { color: var(--text) !important; font-weight: 500; }
+    .check { color: var(--green); }
+    .soon  { color: var(--text-dim); }
+    .badge-impl { color: var(--green); }
+    .badge-soon { color: var(--text-dim); }
+
+    /* ── Footer ── */
+    footer {
+      position: relative; z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 40px 48px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+    }
+    footer .logo { font-family: var(--mono); font-size: 14px; color: var(--text-dim); }
+    footer .logo span { color: var(--rust); }
+    footer p { font-size: 12px; color: var(--text-dim); }
+    footer .links { display: flex; gap: 16px; }
+    footer .links a { font-size: 12px; color: var(--text-dim); text-decoration: none; }
+    footer .links a:hover { color: var(--text); }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Mobile nav ── */
+    @media (max-width: 600px) {
+      nav { padding: 14px 20px; }
+      .nav-links .nav-hide { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">
+    <span class="crab">🦀</span>
+    moleculer<span>-rs</span>
+  </a>
+  <div class="nav-links">
+    <a href="#features" class="nav-hide">Features</a>
+    <a href="#architecture" class="nav-hide">Architecture</a>
+    <a href="#channels" class="nav-hide">Channels</a>
+    <a href="https://github.com/oneErrortime/mj" target="_blank" class="nav-hide">GitHub</a>
+    <a href="lab/" class="btn-cta nav-cta">Open Lab →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-badge">Rust port of Moleculer.js · v0.1.0</div>
+  <h1>moleculer<em>-rs</em></h1>
+  <p class="hero-sub">Progressive microservices · Rust edition</p>
+  <p>Full-featured Rust reimplementation of <a href="https://moleculer.services" style="color:var(--rust);text-decoration:none">Moleculer.js</a> — with fearless concurrency, zero-cost abstractions, and no garbage collector.</p>
+  <div class="hero-actions">
+    <a href="lab/" class="btn btn-primary">🔬 Open Laboratory</a>
+    <a href="https://github.com/oneErrortime/mj" target="_blank" class="btn btn-ghost">View on GitHub</a>
+    <a href="#quickstart" class="btn btn-ghost">Quick Start →</a>
+  </div>
+
+  <!-- Terminal -->
+  <div class="terminal-wrap">
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="dot dot-r"></div>
+        <div class="dot dot-y"></div>
+        <div class="dot dot-g"></div>
+        <span class="terminal-title">main.rs — moleculer-rs demo</span>
+      </div>
+      <div class="terminal-body">
+<div class="line"><span class="ln">1</span><span><span class="kw">use</span> <span class="nm">moleculer</span><span class="op">::</span><span class="tx">prelude</span><span class="op">::*;</span></span></div>
+<div class="line"><span class="ln">2</span><span></span></div>
+<div class="line"><span class="ln">3</span><span><span class="kw">#[tokio::main]</span></span></div>
+<div class="line"><span class="ln">4</span><span><span class="kw">async fn</span> <span class="fn">main</span><span class="op">() {</span></span></div>
+<div class="line"><span class="ln">5</span><span>  <span class="kw">let</span> broker <span class="op">=</span> <span class="nm">ServiceBroker</span><span class="op">::</span><span class="fn">new</span><span class="op">(</span></span></div>
+<div class="line"><span class="ln">6</span><span>    <span class="nm">BrokerConfig</span><span class="op">::</span><span class="fn">default</span><span class="op">()</span></span></div>
+<div class="line"><span class="ln">7</span><span>      <span class="op">.</span><span class="fn">with_metrics</span><span class="op">()</span></span></div>
+<div class="line"><span class="ln">8</span><span>      <span class="op">.</span><span class="fn">with_tracing</span><span class="op">()</span></span></div>
+<div class="line"><span class="ln">9</span><span>      <span class="op">.</span><span class="fn">with_circuit_breaker</span><span class="op">()</span></span></div>
+<div class="line"><span class="ln">10</span><span>      <span class="op">.</span><span class="fn">with_channels</span><span class="op">()</span></span></div>
+<div class="line"><span class="ln">11</span><span>  <span class="op">);</span></span></div>
+<div class="line"><span class="ln">12</span><span></span></div>
+<div class="line"><span class="ln">13</span><span>  broker<span class="op">.</span><span class="fn">add_service</span><span class="op">(</span></span></div>
+<div class="line"><span class="ln">14</span><span>    <span class="nm">ServiceSchema</span><span class="op">::</span><span class="fn">new</span><span class="op">(</span><span class="st">"math"</span><span class="op">)</span></span></div>
+<div class="line"><span class="ln">15</span><span>      <span class="op">.</span><span class="fn">action</span><span class="op">(</span><span class="nm">ActionDef</span><span class="op">::</span><span class="fn">new</span><span class="op">(</span><span class="st">"add"</span><span class="op">,</span> <span class="op">|</span>ctx<span class="op">|</span> <span class="kw">async move</span> <span class="op">{</span></span></div>
+<div class="line"><span class="ln">16</span><span>        <span class="kw">let</span> a <span class="op">=</span> ctx<span class="op">.</span>params<span class="op">[</span><span class="st">"a"</span><span class="op">].</span><span class="fn">as_f64</span><span class="op">()</span><span class="op">.</span><span class="fn">unwrap_or</span><span class="op">(</span><span class="nm">0.0</span><span class="op">);</span></span></div>
+<div class="line"><span class="ln">17</span><span>        <span class="kw">let</span> b <span class="op">=</span> ctx<span class="op">.</span>params<span class="op">[</span><span class="st">"b"</span><span class="op">].</span><span class="fn">as_f64</span><span class="op">()</span><span class="op">.</span><span class="fn">unwrap_or</span><span class="op">(</span><span class="nm">0.0</span><span class="op">);</span></span></div>
+<div class="line"><span class="ln">18</span><span>        <span class="nm">Ok</span><span class="op">(</span><span class="fn">json!</span><span class="op">({</span> <span class="st">"result"</span><span class="op">:</span> a <span class="op">+</span> b <span class="op">}))</span></span></div>
+<div class="line"><span class="ln">19</span><span>      <span class="op">}).</span><span class="fn">cache</span><span class="op">(</span>vec!<span class="op">[</span><span class="st">"a"</span><span class="op">,</span> <span class="st">"b"</span><span class="op">]))</span></span></div>
+<div class="line"><span class="ln">20</span><span>  <span class="op">).</span><span class="kw">await</span><span class="op">;</span></span></div>
+<div class="line"><span class="ln">21</span><span></span></div>
+<div class="line"><span class="ln">22</span><span>  broker<span class="op">.</span><span class="fn">start</span><span class="op">().</span><span class="kw">await</span><span class="op">.</span><span class="fn">unwrap</span><span class="op">();</span>  <span class="cm">// 🔬 → http://localhost:3210</span></span></div>
+<div class="line"><span class="ln">23</span><span><span class="op">}</span></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS BAR -->
+<div class="stats-bar" style="position:relative;z-index:1;max-width:760px;margin:0 auto 96px;">
+  <div class="stat">
+    <span class="stat-num">0GC</span>
+    <div class="stat-label">No garbage collector</div>
+  </div>
+  <div class="stat">
+    <span class="stat-num">15+</span>
+    <div class="stat-label">Features implemented</div>
+  </div>
+  <div class="stat">
+    <span class="stat-num">~0</span>
+    <div class="stat-label">Runtime overhead</div>
+  </div>
+  <div class="stat">
+    <span class="stat-num">MIT</span>
+    <div class="stat-label">License</div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-tag">// features</div>
+  <h2>Everything Moleculer has.<br>In Rust.</h2>
+  <p class="section-desc">A complete port of the Moleculer.js ecosystem — not a thin wrapper, but a full reimplementation with idiomatic Rust.</p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <span class="feature-icon">⚡</span>
+      <h3>ServiceBroker</h3>
+      <p>call / emit / broadcast / ping — the core of Moleculer. Full async with Tokio.</p>
+      <span class="feature-status">✓ Implemented</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🔀</span>
+      <h3>Load Balancing</h3>
+      <p>Round-Robin, Random, and Shard strategies across service endpoints.</p>
+      <span class="feature-status">✓ Implemented</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🔌</span>
+      <h3>Circuit Breaker</h3>
+      <p>Full CLOSED→OPEN→HALF_OPEN state machine with configurable thresholds and rolling window.</p>
+      <span class="feature-status">✓ Implemented</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🔁</span>
+      <h3>Retry Policy</h3>
+      <p>Exponential backoff with configurable factor, maxDelay, and retryable error types.</p>
+      <span class="feature-status">✓ Implemented</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🚪</span>
+      <h3>Bulkhead</h3>
+      <p>Semaphore per action with overflow queue. Prevents cascading overload across services.</p>
+      <span class="feature-status">✓ Implemented</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">💾</span>
+      <h3>LRU Cacher</h3>
+      <p>Transparent get/set around actions with cache:true, key templates, and TTL.</p>
+      <span class="feature-status">✓ Implemented</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📬</span>
+      <h3>Channels (durable)</h3>
+      <p>@moleculer/channels equivalent — ACK/NACK, consumer groups, DLQ, exponential retry.</p>
+      <span class="feature-status">✓ Implemented</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📊</span>
+      <h3>Metrics</h3>
+      <p>Counter, Gauge, Histogram with Prometheus text export at /metrics/prometheus.</p>
+      <span class="feature-status">✓ Implemented</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🔍</span>
+      <h3>Distributed Tracing</h3>
+      <p>Spans with parent/child relationships, by-trace queries, exporters.</p>
+      <span class="feature-status">✓ Implemented</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🧬</span>
+      <h3>Mixins</h3>
+      <p>Schema composition — mixin actions/events merge into the service, own definitions take priority.</p>
+      <span class="feature-status">✓ Implemented</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🔬</span>
+      <h3>Laboratory Agent</h3>
+      <p>Full HTTP JSON API on :3210 — compatible with lab.moleculer.services dashboard.</p>
+      <span class="feature-status">✓ Implemented</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🌐</span>
+      <h3>Topology Graph</h3>
+      <p>Live service call graph with req/min and latency edges, tracked per (caller→action) pair.</p>
+      <span class="feature-status">✓ Implemented</span>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section id="architecture">
+  <div class="section-tag">// architecture</div>
+  <h2>What's inside</h2>
+  <p class="section-desc">Every layer of the Moleculer architecture, faithfully reimplemented in Rust with tokio async runtime.</p>
+  <div class="arch-wrap">
+    <pre class="arch-ascii"><span class="hl">┌─────────────────────────────────────────────────────────────────────────────┐
+│                              ServiceBroker                                  │</span>
+│                                                                             │
+│  <span class="hl2">┌──────────────┐</span>   <span class="hl2">┌───────────────────────────────────────────────────┐</span>  │
+│  <span class="hl2">│   Registry   │</span>   <span class="hl2">│              Middleware Pipeline                  │</span>  │
+│  <span class="hl2">│  · services  │</span>   <span class="hl2">│  Logging → Metrics → Tracing → Timeout →          │</span>  │
+│  <span class="hl2">│  · actions   │</span>   <span class="hl2">│  Retry → CircuitBreaker → Bulkhead → Cacher        │</span>  │
+│  <span class="hl2">│  · events    │</span>   <span class="hl2">└───────────────────────────────────────────────────┘</span>  │
+│  <span class="hl2">│  · topology  │</span>                                                           │
+│  <span class="hl2">└──────────────┘</span>   <span class="hl">┌─────────────┐  ┌───────────┐  ┌───────────────────┐</span> │
+│                    <span class="hl">│  Channels   │  │  Metrics  │  │  Distributed      │</span> │
+│  <span class="hl2">┌──────────────┐</span>   <span class="hl">│  · InMemory │  │  Counter  │  │  Tracing          │</span> │
+│  <span class="hl2">│  LRU Cacher  │</span>   <span class="hl">│  · DLQ      │  │  Gauge    │  │  SpanStore        │</span> │
+│  <span class="hl2">│  · Memory    │</span>   <span class="hl">│  · Groups   │  │  Histogram│  │  Parent/child     │</span> │
+│  <span class="hl2">│  · Key gen   │</span>   <span class="hl">│  · ACK/NACK │  │  Prometheus│ └───────────────────┘</span> │
+│  <span class="hl2">└──────────────┘</span>   <span class="hl">└─────────────┘  └───────────┘</span>                        │
+│                                                                             │
+│  <span class="hl3">┌───────────────────────────────────────────────────────────────────────┐</span>  │
+│  <span class="hl3">│                    Laboratory Agent  (:3210)                          │</span>  │
+│  <span class="hl3">│  GET  /health  /info  /services  /topology  /nodes  /actions          │</span>  │
+│  <span class="hl3">│  GET  /metrics  /metrics/prometheus  /traces  /logs  /channels        │</span>  │
+│  <span class="hl3">│  POST /action  /channels/send    DELETE /channels/dlq/{id}            │</span>  │
+│  <span class="hl3">└───────────────────────────────────────────────────────────────────────┘</span>  │
+<span class="hl">└─────────────────────────────────────────────────────────────────────────────┘</span></pre>
+  </div>
+</section>
+
+<!-- CHANNELS -->
+<section id="channels">
+  <div class="section-tag">// channels</div>
+  <h2>Durable message queues</h2>
+  <p class="section-desc">@moleculer/channels equivalent — unlike emit/broadcast which are fire-and-forget, channels persist messages until ACK'd.</p>
+
+  <div class="channels-layout">
+    <div class="channel-card">
+      <h3>Producer → Consumer flow</h3>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:8px">Messages are stored until successfully ACK'd. Consumer groups share load — each message goes to exactly one consumer within a group.</p>
+      <div class="channel-flow">
+        <span class="flow-node prod">broker.send_to_channel()</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-node chan">Adapter (in-mem)</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-node cons">Consumer Group</span>
+      </div>
+    </div>
+    <div class="channel-card">
+      <h3>Failure handling</h3>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:8px">NACK triggers exponential backoff retry. After max_retries failures, the message is moved to the Dead Letter Queue.</p>
+      <div class="channel-flow">
+        <span class="flow-node cons">Handler</span>
+        <span class="flow-arrow">NACK</span>
+        <span class="flow-node chan">Retry + backoff</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-node dlq">DLQ</span>
+      </div>
+    </div>
+    <div class="channel-card" style="grid-column: span 2;">
+      <h3>Code example</h3>
+      <div class="terminal" style="margin-top:12px">
+        <div class="terminal-body" style="padding:16px">
+<div class="line"><span class="ln">1</span><span><span class="cm">// Subscribe to durable channel</span></span></div>
+<div class="line"><span class="ln">2</span><span>broker<span class="op">.</span><span class="fn">subscribe_channel</span><span class="op">(</span></span></div>
+<div class="line"><span class="ln">3</span><span>  <span class="nm">ChannelDef</span><span class="op">::</span><span class="fn">new</span><span class="op">(</span><span class="st">"orders.created"</span><span class="op">,</span> <span class="op">|</span>msg<span class="op">:</span> <span class="nm">ChannelMessage</span><span class="op">|</span> <span class="kw">async move</span> <span class="op">{</span></span></div>
+<div class="line"><span class="ln">4</span><span>    <span class="cm">// process order...</span></span></div>
+<div class="line"><span class="ln">5</span><span>    msg<span class="op">.</span><span class="fn">ack</span><span class="op">().</span><span class="kw">await</span>   <span class="cm">// or msg.nack() to retry</span></span></div>
+<div class="line"><span class="ln">6</span><span>  <span class="op">})</span></span></div>
+<div class="line"><span class="ln">7</span><span>  <span class="op">.</span><span class="fn">group</span><span class="op">(</span><span class="st">"order-processor"</span><span class="op">)</span></span></div>
+<div class="line"><span class="ln">8</span><span>  <span class="op">.</span><span class="fn">max_in_flight</span><span class="op">(</span><span class="nm">5</span><span class="op">)</span></span></div>
+<div class="line"><span class="ln">9</span><span>  <span class="op">.</span><span class="fn">max_retries</span><span class="op">(</span><span class="nm">3</span><span class="op">)</span></span></div>
+<div class="line"><span class="ln">10</span><span>  <span class="op">.</span><span class="fn">dead_letter</span><span class="op">(</span><span class="st">"orders.DLQ"</span><span class="op">),</span></span></div>
+<div class="line"><span class="ln">11</span><span><span class="op">).</span><span class="kw">await</span><span class="op">.</span><span class="fn">unwrap</span><span class="op">();</span></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- QUICK START -->
+<section id="quickstart">
+  <div class="section-tag">// quick start</div>
+  <h2>Get running in 30 seconds</h2>
+  <p class="section-desc">Add moleculer-rs to your Cargo project and spin up a full microservices node.</p>
+
+  <div style="display:grid;gap:16px">
+    <div>
+      <p style="font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-bottom:8px">1. Add to Cargo.toml</p>
+      <div class="terminal">
+        <div class="terminal-body" style="padding:14px 20px">
+<span style="color:var(--text-dim)">[dependencies]</span><br>
+<span style="color:var(--cyan)">moleculer</span> = <span style="color:var(--green)">"0.1"</span><br>
+<span style="color:var(--cyan)">tokio</span>     = <span style="color:var(--green)">"{ version = \"1\", features = [\"full\"] }"</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p style="font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-bottom:8px">2. Clone and run the demo</p>
+      <div class="terminal">
+        <div class="terminal-body" style="padding:14px 20px">
+<span style="color:var(--rust)">$</span> git clone https://github.com/oneErrortime/mj<br>
+<span style="color:var(--rust)">$</span> cd mj<br>
+<span style="color:var(--rust)">$</span> cargo run<br>
+<span style="color:var(--green)">&#8203;</span><br>
+<span style="color:var(--text-dim)"># Then open the Lab UI:</span><br>
+<span style="color:var(--rust)">$</span> <span style="color:var(--cyan)">open</span> https://oneerrortime.github.io/mj/lab/
+        </div>
+      </div>
+    </div>
+    <div>
+      <p style="font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-bottom:8px">3. Connect the Lab UI to your instance</p>
+      <div class="terminal">
+        <div class="terminal-body" style="padding:14px 20px">
+<span style="color:var(--text-dim)"># In the Lab UI, set endpoint to:</span><br>
+<span style="color:var(--cyan)">http://localhost:3210</span><br>
+<span style="color:var(--text-dim)"></span><br>
+<span style="color:var(--text-dim)"># Live data: topology, metrics, traces, channels, logs</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURE TABLE -->
+<section>
+  <div class="section-tag">// roadmap</div>
+  <h2>Full feature matrix</h2>
+  <p class="section-desc">Current implementation status across the Moleculer feature set.</p>
+
+  <div class="arch-wrap" style="padding:0;overflow:auto">
+    <table class="feature-table">
+      <thead>
+        <tr>
+          <th>Feature</th><th>Status</th><th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="td-name">ServiceBroker</td><td class="check">✓ Done</td><td class="td-notes">call / emit / broadcast / ping</td></tr>
+        <tr><td class="td-name">ServiceSchema</td><td class="check">✓ Done</td><td>actions, events, hooks</td></tr>
+        <tr><td class="td-name">Mixins</td><td class="check">✓ Done</td><td>Schema composition + merge</td></tr>
+        <tr><td class="td-name">Context</td><td class="check">✓ Done</td><td>params, meta, headers, tracing, level</td></tr>
+        <tr><td class="td-name">Service Registry</td><td class="check">✓ Done</td><td>Local catalog, endpoint resolution</td></tr>
+        <tr><td class="td-name">Load Balancing</td><td class="check">✓ Done</td><td>Round-Robin, Random, Shard</td></tr>
+        <tr><td class="td-name">Circuit Breaker</td><td class="check">✓ Done</td><td>Full CLOSED/HALF_OPEN/OPEN state machine</td></tr>
+        <tr><td class="td-name">Retry Policy</td><td class="check">✓ Done</td><td>Exponential backoff, retryable errors</td></tr>
+        <tr><td class="td-name">Bulkhead</td><td class="check">✓ Done</td><td>Semaphore + overflow queue per action</td></tr>
+        <tr><td class="td-name">LRU Cacher</td><td class="check">✓ Done</td><td>Memory LRU, key generation, TTL</td></tr>
+        <tr><td class="td-name">Timeout</td><td class="check">✓ Done</td><td>Per-request timeout middleware</td></tr>
+        <tr><td class="td-name">Metrics</td><td class="check">✓ Done</td><td>Counter, Gauge, Histogram + Prometheus</td></tr>
+        <tr><td class="td-name">Distributed Tracing</td><td class="check">✓ Done</td><td>Spans, parent/child, by-trace query</td></tr>
+        <tr><td class="td-name">Channels (durable)</td><td class="check">✓ Done</td><td>In-memory, ACK/NACK, DLQ, backoff</td></tr>
+        <tr><td class="td-name">Laboratory Agent</td><td class="check">✓ Done</td><td>HTTP JSON API on :3210</td></tr>
+        <tr><td class="td-name">Topology Graph</td><td class="check">✓ Done</td><td>Service call graph with latency edges</td></tr>
+        <tr><td class="td-name">Redis Streams adapter</td><td class="soon">⋯ Planned</td><td>Channel adapter</td></tr>
+        <tr><td class="td-name">NATS transporter</td><td class="soon">⋯ Planned</td><td>Cluster networking</td></tr>
+        <tr><td class="td-name">Parameter validation</td><td class="soon">⋯ Planned</td><td>JSON Schema</td></tr>
+        <tr><td class="td-name">Hot reload</td><td class="soon">⋯ Planned</td><td>Live service updates</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- LAB CTA -->
+<section>
+  <div class="lab-cta">
+    <div class="section-tag" style="justify-content:center;display:flex">// laboratory</div>
+    <h2>🔬 Open the Lab</h2>
+    <p>Run your moleculer-rs instance locally, then connect the Lab UI to inspect topology, live metrics, distributed traces, channel stats, and logs — all in real-time.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a href="lab/" class="btn btn-primary" style="font-size:15px;padding:14px 32px">Open Laboratory →</a>
+      <a href="https://github.com/oneErrortime/mj" target="_blank" class="btn btn-ghost">View Source</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="logo">🦀 moleculer<span>-rs</span></div>
+  <p>Full-featured Rust port of Moleculer.js</p>
+  <div class="links">
+    <a href="https://github.com/oneErrortime/mj" target="_blank">GitHub</a>
+    <a href="lab/">Laboratory</a>
+    <a href="https://moleculer.services" target="_blank">Moleculer.js</a>
+    <a href="https://lab.moleculer.services" target="_blank">Original Lab</a>
+  </div>
+</footer>
+
+</body>
+</html>
