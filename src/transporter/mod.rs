@@ -1,4 +1,5 @@
 pub mod local;
+pub mod fake;
 use async_trait::async_trait;
 use crate::error::Result;
 use serde::{Deserialize, Serialize};
